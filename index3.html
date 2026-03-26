@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Prix Carburants France</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',sans-serif;min-height:100vh;background:linear-gradient(165deg,#0f1724 0%,#1a1f2e 40%,#161b28 100%);color:#e2e8f0;overflow-x:hidden}
+.grain{position:fixed;inset:0;opacity:.03;pointer-events:none;z-index:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+.screen{display:none;min-height:100vh}.screen.active{display:block}
+#screen-welcome{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px;position:relative;z-index:1}
+#screen-welcome.active{display:flex}
+
+/* WELCOME CARD */
+.wc{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:24px;padding:40px 32px;max-width:460px;width:100%;position:relative;overflow:hidden}
+.wc::before{content:"";position:absolute;top:-60%;left:-20%;width:140%;height:100%;background:radial-gradient(ellipse,rgba(245,158,11,.08) 0%,transparent 70%);pointer-events:none}
+.wc-logo{text-align:center;margin-bottom:24px;position:relative}
+.wc-logo .ic{font-size:56px;display:block;margin-bottom:12px}
+.wc-logo h1{font-size:26px;font-weight:800;letter-spacing:-.02em;color:#f8fafc}
+.wc-logo p{font-size:14px;color:#94a3b8;margin-top:4px}
+.step{position:relative;margin-bottom:24px}
+.step-label{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:#f59e0b;margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.step-num{background:rgba(245,158,11,.2);width:24px;height:24px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;font-family:'JetBrains Mono',monospace}
+.loc-btn{width:100%;padding:14px 18px;border-radius:12px;border:2px solid rgba(255,255,255,.08);background:rgba(255,255,255,.04);color:#e2e8f0;font-size:15px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:12px;margin-bottom:8px;text-align:left}
+.loc-btn:hover{border-color:rgba(245,158,11,.4);background:rgba(245,158,11,.08)}
+.loc-btn.selected{border-color:rgba(245,158,11,.6);background:rgba(245,158,11,.12);color:#f59e0b}
+.loc-btn .bi{font-size:22px;flex-shrink:0}.loc-btn .bt{flex:1}
+.loc-btn .bs{font-size:12px;color:#64748b;font-weight:400;display:block;margin-top:2px}
+.loc-btn.selected .bs{color:#d97706}
+.loc-status{font-size:12px;color:#10b981;margin-top:4px;display:none;padding-left:36px;font-weight:600}
+.loc-status.show{display:block}.loc-status.error{color:#f87171}
+.dw{display:none;margin-top:8px}.dw.show{display:block}
+.ds{width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:12px 14px;color:#f1f5f9;font-size:14px;font-family:'DM Sans',sans-serif;outline:none;margin-bottom:6px}
+.ds::placeholder{color:#64748b}
+.dl{max-height:180px;overflow-y:auto;border-radius:10px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06)}
+.dl::-webkit-scrollbar{width:6px}.dl::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:3px}
+.di{padding:10px 14px;cursor:pointer;font-size:13px;transition:background .15s;border-bottom:1px solid rgba(255,255,255,.03)}
+.di:hover{background:rgba(245,158,11,.1)}.di.selected{background:rgba(245,158,11,.15);color:#f59e0b;font-weight:700}
+.fuel-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.fb{padding:12px 8px;border-radius:10px;border:2px solid rgba(255,255,255,.08);background:rgba(255,255,255,.03);cursor:pointer;transition:all .2s;text-align:center;font-family:'DM Sans',sans-serif}
+.fb:hover{border-color:rgba(255,255,255,.2)}
+.fb.selected{border-color:var(--fc);background:color-mix(in srgb,var(--fc) 15%,transparent)}
+.fb-n{font-size:13px;font-weight:700;color:#f1f5f9}.fb.selected .fb-n{color:var(--fc)}
+.fb-d{width:8px;height:8px;border-radius:50%;margin:0 auto 6px}
+.go-btn{width:100%;padding:16px;border-radius:14px;border:none;background:linear-gradient(135deg,#f59e0b,#d97706);color:#1a1f2e;font-size:16px;font-weight:800;font-family:'DM Sans',sans-serif;cursor:pointer;transition:all .2s;margin-top:8px;letter-spacing:.02em}
+.go-btn:hover{transform:translateY(-1px);box-shadow:0 8px 30px rgba(245,158,11,.3)}
+.go-btn:disabled{opacity:.4;cursor:not-allowed;transform:none;box-shadow:none}
+
+/* RESULTS SCREEN */
+.rh{position:relative;z-index:1;padding:20px;background:linear-gradient(180deg,rgba(245,158,11,.1) 0%,transparent 100%);border-bottom:1px solid rgba(245,158,11,.12)}
+.rh-inner{max-width:750px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.rh-left{display:flex;align-items:center;gap:12px}
+.rh-left .ic{font-size:28px}
+.rh-title{font-size:18px;font-weight:800;color:#f8fafc}
+.rh-sub{font-size:12px;color:#94a3b8}
+.rh-badge{padding:6px 14px;border-radius:8px;font-size:13px;font-weight:800;font-family:'JetBrains Mono',monospace}
+.back-btn{padding:8px 16px;border-radius:8px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.05);color:#94a3b8;font-size:13px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .2s}
+.back-btn:hover{border-color:rgba(245,158,11,.3);color:#f59e0b}
+
+/* SORT TABS */
+.sort-tabs{position:relative;z-index:1;max-width:750px;margin:0 auto;padding:16px 20px 0;display:flex;gap:8px}
+.sort-tab{flex:1;padding:12px;border-radius:10px;border:2px solid rgba(255,255,255,.08);background:rgba(255,255,255,.03);color:#94a3b8;font-size:14px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;text-align:center;transition:all .2s}
+.sort-tab:hover{border-color:rgba(255,255,255,.2)}
+.sort-tab.active{border-color:rgba(245,158,11,.5);background:rgba(245,158,11,.1);color:#f59e0b}
+.sort-tab .st-icon{font-size:18px;display:block;margin-bottom:4px}
+
+/* STATION CARDS */
+.res-section{position:relative;z-index:1;max-width:750px;margin:0 auto;padding:16px 20px 10px}
+.res-count{font-size:12px;color:#64748b;margin-bottom:12px;font-weight:600}
+.res-list{display:flex;flex-direction:column;gap:10px}
+.loading-box{text-align:center;padding:60px 0;display:none}.loading-box.show{display:block}
+.spinner{width:36px;height:36px;border:3px solid rgba(245,158,11,.2);border-top-color:#f59e0b;border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 16px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.error-box{text-align:center;padding:32px;display:none;background:rgba(239,68,68,.08);border-radius:12px;border:1px solid rgba(239,68,68,.2);color:#fca5a5}.error-box.show{display:block}
+.empty-state{text-align:center;padding:60px 20px;color:#64748b;display:none}.empty-state.show{display:block}
+
+.card{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);border-radius:14px;padding:14px 16px;animation:fadeIn .4s ease both}
+.card.best{border:1px solid rgba(16,185,129,.25);background:rgba(16,185,129,.04)}
+@keyframes fadeIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+.card-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px}
+.card-left{display:flex;gap:10px;align-items:flex-start;min-width:0;flex:1}
+.rank{background:rgba(245,158,11,.15);color:#f59e0b;font-family:'JetBrains Mono',monospace;font-weight:700;font-size:12px;width:28px;height:28px;border-radius:7px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.brand-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:2px}
+.brand-badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:5px;font-size:10px;font-weight:800;text-transform:uppercase;white-space:nowrap}
+.station-name{font-weight:700;font-size:14px;color:#f1f5f9;text-transform:capitalize}
+.tag-24{font-size:9px;font-weight:700;background:rgba(59,130,246,.2);color:#60a5fa;padding:2px 7px;border-radius:5px}
+.tag-best{font-size:13px}
+.station-addr{font-size:11px;color:#64748b;margin-top:2px;text-transform:capitalize}
+.dist-badge{font-size:12px;font-weight:700;font-family:'JetBrains Mono',monospace;color:#94a3b8;background:rgba(255,255,255,.05);padding:3px 8px;border-radius:6px;white-space:nowrap;flex-shrink:0;margin-left:6px}
+.price-highlight{font-size:22px;font-weight:800;font-family:'JetBrains Mono',monospace;margin:6px 0 8px}
+.prices-row{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:10px}
+.price-chip{border:1px solid;border-radius:7px;padding:5px 10px;display:flex;flex-direction:column;gap:1px;min-width:72px}
+.price-fuel{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.04em}
+.price-val{font-size:14px;font-family:'JetBrains Mono',monospace;color:#f1f5f9;font-weight:600}
+.price-val.is-best{font-weight:800}
+.updated-at{font-size:9px;color:#64748b}
+.nav-btns{display:flex;gap:8px;flex-wrap:wrap}
+.nav-btn{display:inline-flex;align-items:center;gap:6px;padding:9px 14px;border-radius:9px;text-decoration:none;font-size:12px;font-weight:700;font-family:'DM Sans',sans-serif;transition:all .15s}
+.nav-btn-gmaps{background:rgba(66,133,244,.15);color:#60a5fa}.nav-btn-gmaps:hover{background:rgba(66,133,244,.3)}
+.nav-btn-waze{background:rgba(51,208,255,.12);color:#33d0ff}.nav-btn-waze:hover{background:rgba(51,208,255,.25)}
+.nav-btn svg{width:16px;height:16px;flex-shrink:0}
+
+/* OTHER SEARCH BUTTON */
+.other-section{max-width:750px;margin:0 auto;padding:16px 20px}
+.other-btn{width:100%;padding:14px;border-radius:12px;border:2px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04);color:#e2e8f0;font-size:15px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:10px}
+.other-btn:hover{border-color:rgba(245,158,11,.4);background:rgba(245,158,11,.08);color:#f59e0b}
+
+/* FULL SEARCH SCREEN (screen 3) */
+#screen-full header{position:relative;z-index:1;background:linear-gradient(180deg,rgba(245,158,11,.12) 0%,transparent 100%);border-bottom:1px solid rgba(245,158,11,.15);padding:18px 20px}
+.fh-inner{max-width:750px;margin:0 auto;display:flex;align-items:center;gap:14px;justify-content:space-between}
+.fh-left{display:flex;align-items:center;gap:12px}
+.fh-left .ic{font-size:28px}
+.fh-left h1{font-size:18px;font-weight:800;color:#f8fafc}
+.ss{position:relative;z-index:10;padding:16px 20px 12px;border-bottom:1px solid rgba(255,255,255,.06)}
+.ss-inner{max-width:750px;margin:0 auto}
+.ss-box{position:relative}
+.ss-box .si{position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:16px;z-index:2}
+.ss-input{width:100%;background:rgba(255,255,255,.07);border:2px solid rgba(245,158,11,.25);border-radius:12px;padding:12px 16px 12px 42px;color:#f1f5f9;font-size:14px;font-family:'DM Sans',sans-serif;outline:none}
+.ss-input:focus{border-color:rgba(245,158,11,.5)}
+.ss-input::placeholder{color:#64748b}
+.ss-sugg{position:absolute;top:100%;left:0;right:0;background:#1e2536;border:1px solid rgba(255,255,255,.1);border-radius:12px;margin-top:4px;overflow:hidden;box-shadow:0 12px 40px rgba(0,0,0,.5);z-index:20;display:none}
+.ss-sugg.show{display:block}
+.ss-item{display:flex;align-items:center;gap:10px;padding:10px 14px;cursor:pointer;transition:background .15s;font-size:13px}
+.ss-item:hover{background:rgba(245,158,11,.12)}
+.ff{position:relative;z-index:1;padding:12px 20px;border-bottom:1px solid rgba(255,255,255,.06)}
+.ff-inner{max-width:750px;margin:0 auto;display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end}
+.fg{display:flex;flex-direction:column;gap:3px;flex:1;min-width:100px}
+.fl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#64748b}
+.fs{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:7px 10px;color:#e2e8f0;font-size:13px;font-family:'DM Sans',sans-serif;cursor:pointer;outline:none}
+.sc{font-size:12px;font-weight:700;font-family:'JetBrains Mono',monospace;color:#f59e0b;background:rgba(245,158,11,.12);padding:7px 14px;border-radius:8px;white-space:nowrap}
+.fm{position:relative;z-index:1;max-width:750px;margin:0 auto;padding:14px 20px 40px}
+#full-list{display:flex;flex-direction:column;gap:10px}
+footer{position:relative;z-index:1;text-align:center;padding:20px;font-size:11px;color:#475569;border-top:1px solid rgba(255,255,255,.04)}
+@media(max-width:500px){.wc{padding:28px 20px}.fuel-grid{grid-template-columns:repeat(2,1fr)}.nav-btn{padding:9px 10px;font-size:11px;flex:1;justify-content:center}.ff-inner,.filters-inner{flex-direction:column}.fg,.filter-group{min-width:100%}.rh-inner{flex-direction:column;align-items:flex-start}.sort-tabs{flex-direction:column}}
+</style>
+</head>
+<body>
+<div class="grain"></div>
+
+<!-- ===== SCREEN 1: WELCOME ===== -->
+<div id="screen-welcome" class="screen active">
+<div class="wc">
+  <div class="wc-logo"><span class="ic">⛽</span><h1>Prix Carburants</h1><p>Trouvez le carburant le moins cher près de chez vous</p></div>
+  <div class="step">
+    <div class="step-label"><span class="step-num">1</span> Votre position</div>
+    <button class="loc-btn" id="btn-geo" type="button"><span class="bi">📍</span><span class="bt">Me localiser automatiquement<span class="bs">Utilise le GPS de votre appareil</span></span></button>
+    <div class="loc-status" id="geo-status"></div>
+    <button class="loc-btn" id="btn-dept" type="button"><span class="bi">🗺️</span><span class="bt">Choisir un département<span class="bs">Sélectionnez votre département</span></span></button>
+    <div class="dw" id="dw"><input type="text" class="ds" id="ds" placeholder="Rechercher un département..."><div class="dl" id="dl"></div></div>
+    <div class="loc-status" id="dept-status"></div>
+  </div>
+  <div class="step">
+    <div class="step-label"><span class="step-num">2</span> Type de carburant</div>
+    <div class="fuel-grid" id="fg"></div>
+  </div>
+  <button class="go-btn" id="go-btn" disabled>🔍 Rechercher les meilleurs prix</button>
+</div>
+</div>
+
+<!-- ===== SCREEN 2: RESULTS ===== -->
+<div id="screen-results" class="screen">
+  <div class="rh"><div class="rh-inner">
+    <div class="rh-left"><span class="ic">⛽</span><div><div class="rh-title" id="rh-title">Résultats</div><div class="rh-sub" id="rh-sub"></div></div></div>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <div class="rh-badge" id="rh-badge"></div>
+      <button class="back-btn" id="back-btn">← Modifier</button>
+    </div>
+  </div></div>
+  <div class="sort-tabs" id="sort-tabs">
+    <button class="sort-tab active" data-sort="price"><span class="st-icon">🏷️</span>Moins cher</button>
+    <button class="sort-tab" data-sort="distance"><span class="st-icon">📍</span>Plus proche</button>
+  </div>
+  <div class="res-section">
+    <div class="res-count" id="res-count"></div>
+    <div class="loading-box" id="res-loading"><div class="spinner"></div><p style="color:#94a3b8;font-size:14px">Recherche des stations...</p></div>
+    <div class="error-box" id="res-error"><p id="res-error-msg"></p><button class="back-btn" style="margin-top:10px" onclick="showScreen('screen-welcome')">← Retour</button></div>
+    <div class="empty-state" id="res-empty"><p style="font-size:40px">🔍</p><p>Aucune station trouvée dans un rayon de 20 km.</p></div>
+    <div class="res-list" id="res-list"></div>
+  </div>
+  <div class="other-section"><button class="other-btn" id="other-btn">🔄 Autre recherche — tous les carburants, toutes les villes</button></div>
+  <footer>Données : data.economie.gouv.fr — mise à jour toutes les 10 min</footer>
+</div>
+
+<!-- ===== SCREEN 3: FULL SEARCH ===== -->
+<div id="screen-full" class="screen">
+  <header><div class="fh-inner"><div class="fh-left"><span class="ic">⛽</span><div><h1>Recherche complète</h1><p class="rh-sub" id="f-sub"></p></div></div><button class="back-btn" id="back-res-btn">← Retour résultats</button></div></header>
+  <div class="ss"><div class="ss-inner"><div class="ss-box"><span class="si">🔍</span><input type="text" class="ss-input" id="f-input" placeholder="Chercher une ville ou code postal..." autocomplete="off"><div class="ss-sugg" id="f-sugg"></div></div></div></div>
+  <div class="ff"><div class="ff-inner">
+    <div class="fg"><label class="fl">Carburant</label><select class="fs" id="ff-fuel"><option value="all">Tous</option></select></div>
+    <div class="fg"><label class="fl">Trier par</label><select class="fs" id="ff-sort"><option value="distance">Distance</option><option value="price">Prix le + bas</option></select></div>
+    <div class="fg"><label class="fl">Rayon</label><select class="fs" id="ff-rad"><option value="5">5 km</option><option value="10" selected>10 km</option><option value="15">15 km</option><option value="20">20 km</option><option value="30">30 km</option><option value="50">50 km</option></select></div>
+    <div class="sc" id="ff-cnt">0</div>
+  </div></div>
+  <div class="fm">
+    <div class="loading-box" id="f-loading"><div class="spinner"></div><p style="color:#94a3b8;font-size:14px">Chargement...</p></div>
+    <div class="error-box" id="f-error"><p id="f-error-msg"></p></div>
+    <div class="empty-state" id="f-empty"><p style="font-size:40px">🔍</p><p>Aucune station trouvée.</p></div>
+    <div id="full-list"></div>
+  </div>
+  <footer>Données : data.economie.gouv.fr — mise à jour toutes les 10 min</footer>
+</div>
+
+<script>
+// ==================== DEPARTMENTS ====================
+const DEPTS=[
+{c:"01",n:"Ain",city:"Bourg-en-Bresse",lat:46.2057,lon:5.2254},{c:"02",n:"Aisne",city:"Laon",lat:49.5641,lon:3.6199},{c:"03",n:"Allier",city:"Moulins",lat:46.5648,lon:3.3346},{c:"04",n:"Alpes-de-Haute-Provence",city:"Digne",lat:44.0927,lon:6.2365},{c:"05",n:"Hautes-Alpes",city:"Gap",lat:44.5594,lon:6.0786},{c:"06",n:"Alpes-Maritimes",city:"Nice",lat:43.7102,lon:7.262},{c:"07",n:"Ardèche",city:"Privas",lat:44.7355,lon:4.5986},{c:"08",n:"Ardennes",city:"Charleville-Mézières",lat:49.7719,lon:4.7164},{c:"09",n:"Ariège",city:"Foix",lat:42.9653,lon:1.6052},{c:"10",n:"Aube",city:"Troyes",lat:48.2973,lon:4.0744},{c:"11",n:"Aude",city:"Carcassonne",lat:43.2121,lon:2.3536},{c:"12",n:"Aveyron",city:"Rodez",lat:44.3503,lon:2.575},{c:"13",n:"Bouches-du-Rhône",city:"Marseille",lat:43.2965,lon:5.3698},{c:"14",n:"Calvados",city:"Caen",lat:49.1829,lon:-.3707},{c:"15",n:"Cantal",city:"Aurillac",lat:44.9261,lon:2.4441},{c:"16",n:"Charente",city:"Angoulême",lat:45.6503,lon:.1606},{c:"17",n:"Charente-Maritime",city:"La Rochelle",lat:46.1603,lon:-1.1511},{c:"18",n:"Cher",city:"Bourges",lat:47.0833,lon:2.4},{c:"19",n:"Corrèze",city:"Tulle",lat:45.2667,lon:1.7667},{c:"21",n:"Côte-d'Or",city:"Dijon",lat:47.322,lon:5.0415},{c:"22",n:"Côtes-d'Armor",city:"Saint-Brieuc",lat:48.5141,lon:-2.7603},{c:"23",n:"Creuse",city:"Guéret",lat:46.1727,lon:1.874},{c:"24",n:"Dordogne",city:"Périgueux",lat:45.1846,lon:.7214},{c:"25",n:"Doubs",city:"Besançon",lat:47.2378,lon:6.0241},{c:"26",n:"Drôme",city:"Valence",lat:44.9334,lon:4.8924},{c:"27",n:"Eure",city:"Évreux",lat:49.0241,lon:1.1508},{c:"28",n:"Eure-et-Loir",city:"Chartres",lat:48.4565,lon:1.4893},{c:"29",n:"Finistère",city:"Quimper",lat:47.9974,lon:-4.0976},{c:"2A",n:"Corse-du-Sud",city:"Ajaccio",lat:41.9192,lon:8.7386},{c:"2B",n:"Haute-Corse",city:"Bastia",lat:42.6973,lon:9.4509},{c:"30",n:"Gard",city:"Nîmes",lat:43.8367,lon:4.3601},{c:"31",n:"Haute-Garonne",city:"Toulouse",lat:43.6047,lon:1.4442},{c:"32",n:"Gers",city:"Auch",lat:43.6461,lon:.5863},{c:"33",n:"Gironde",city:"Bordeaux",lat:44.8378,lon:-.5792},{c:"34",n:"Hérault",city:"Montpellier",lat:43.6108,lon:3.8767},{c:"35",n:"Ille-et-Vilaine",city:"Rennes",lat:48.1173,lon:-1.6778},{c:"36",n:"Indre",city:"Châteauroux",lat:46.8105,lon:1.6913},{c:"37",n:"Indre-et-Loire",city:"Tours",lat:47.3941,lon:.6848},{c:"38",n:"Isère",city:"Grenoble",lat:45.1885,lon:5.7245},{c:"39",n:"Jura",city:"Lons-le-Saunier",lat:46.674,lon:5.5567},{c:"40",n:"Landes",city:"Mont-de-Marsan",lat:43.894,lon:-.4994},{c:"41",n:"Loir-et-Cher",city:"Blois",lat:47.5861,lon:1.331},{c:"42",n:"Loire",city:"Saint-Étienne",lat:45.4397,lon:4.3872},{c:"43",n:"Haute-Loire",city:"Le Puy-en-Velay",lat:45.0435,lon:3.8853},{c:"44",n:"Loire-Atlantique",city:"Nantes",lat:47.2184,lon:-1.5536},{c:"45",n:"Loiret",city:"Orléans",lat:47.9029,lon:1.9039},{c:"46",n:"Lot",city:"Cahors",lat:44.4475,lon:1.4403},{c:"47",n:"Lot-et-Garonne",city:"Agen",lat:44.2033,lon:.6166},{c:"48",n:"Lozère",city:"Mende",lat:44.5188,lon:3.5015},{c:"49",n:"Maine-et-Loire",city:"Angers",lat:47.4712,lon:-.5518},{c:"50",n:"Manche",city:"Saint-Lô",lat:49.1167,lon:-1.0833},{c:"51",n:"Marne",city:"Châlons-en-Champagne",lat:48.9575,lon:4.3634},{c:"52",n:"Haute-Marne",city:"Chaumont",lat:48.1113,lon:5.1391},{c:"53",n:"Mayenne",city:"Laval",lat:48.0735,lon:-.7696},{c:"54",n:"Meurthe-et-Moselle",city:"Nancy",lat:48.6921,lon:6.1844},{c:"55",n:"Meuse",city:"Bar-le-Duc",lat:48.7739,lon:5.1594},{c:"56",n:"Morbihan",city:"Vannes",lat:47.6583,lon:-2.7608},{c:"57",n:"Moselle",city:"Metz",lat:49.1193,lon:6.1757},{c:"58",n:"Nièvre",city:"Nevers",lat:46.9896,lon:3.159},{c:"59",n:"Nord",city:"Lille",lat:50.6292,lon:3.0573},{c:"60",n:"Oise",city:"Beauvais",lat:49.4295,lon:2.0807},{c:"61",n:"Orne",city:"Alençon",lat:48.432,lon:.0912},{c:"62",n:"Pas-de-Calais",city:"Arras",lat:50.2916,lon:2.7775},{c:"63",n:"Puy-de-Dôme",city:"Clermont-Ferrand",lat:45.7772,lon:3.087},{c:"64",n:"Pyrénées-Atlantiques",city:"Pau",lat:43.2951,lon:-.3708},{c:"65",n:"Hautes-Pyrénées",city:"Tarbes",lat:43.2327,lon:.0782},{c:"66",n:"Pyrénées-Orientales",city:"Perpignan",lat:42.6988,lon:2.8959},{c:"67",n:"Bas-Rhin",city:"Strasbourg",lat:48.5734,lon:7.7521},{c:"68",n:"Haut-Rhin",city:"Colmar",lat:48.0794,lon:7.3587},{c:"69",n:"Rhône",city:"Lyon",lat:45.7578,lon:4.832},{c:"70",n:"Haute-Saône",city:"Vesoul",lat:47.6363,lon:6.1534},{c:"71",n:"Saône-et-Loire",city:"Mâcon",lat:46.307,lon:4.8344},{c:"72",n:"Sarthe",city:"Le Mans",lat:47.9962,lon:.1932},{c:"73",n:"Savoie",city:"Chambéry",lat:45.5646,lon:5.9178},{c:"74",n:"Haute-Savoie",city:"Annecy",lat:45.8992,lon:6.1294},{c:"75",n:"Paris",city:"Paris",lat:48.8566,lon:2.3522},{c:"76",n:"Seine-Maritime",city:"Rouen",lat:49.4432,lon:1.0993},{c:"77",n:"Seine-et-Marne",city:"Melun",lat:48.5394,lon:2.6608},{c:"78",n:"Yvelines",city:"Versailles",lat:48.8014,lon:2.1301},{c:"79",n:"Deux-Sèvres",city:"Niort",lat:46.3239,lon:-.4612},{c:"80",n:"Somme",city:"Amiens",lat:49.895,lon:2.3022},{c:"81",n:"Tarn",city:"Albi",lat:43.9287,lon:2.1489},{c:"82",n:"Tarn-et-Garonne",city:"Montauban",lat:44.0176,lon:1.3547},{c:"83",n:"Var",city:"Toulon",lat:43.1242,lon:5.928},{c:"84",n:"Vaucluse",city:"Avignon",lat:43.9493,lon:4.8055},{c:"85",n:"Vendée",city:"La Roche-sur-Yon",lat:46.6706,lon:-1.4267},{c:"86",n:"Vienne",city:"Poitiers",lat:46.5802,lon:.3404},{c:"87",n:"Haute-Vienne",city:"Limoges",lat:45.8315,lon:1.2578},{c:"88",n:"Vosges",city:"Épinal",lat:48.1725,lon:6.4498},{c:"89",n:"Yonne",city:"Auxerre",lat:47.7979,lon:3.5714},{c:"90",n:"Territoire de Belfort",city:"Belfort",lat:47.6397,lon:6.8628},{c:"91",n:"Essonne",city:"Évry",lat:48.6244,lon:2.4408},{c:"92",n:"Hauts-de-Seine",city:"Nanterre",lat:48.8924,lon:2.2071},{c:"93",n:"Seine-Saint-Denis",city:"Bobigny",lat:48.9065,lon:2.4404},{c:"94",n:"Val-de-Marne",city:"Créteil",lat:48.7905,lon:2.4559},{c:"95",n:"Val-d'Oise",city:"Pontoise",lat:49.0501,lon:2.1007},{c:"971",n:"Guadeloupe",city:"Basse-Terre",lat:15.9972,lon:-61.7311},{c:"972",n:"Martinique",city:"Fort-de-France",lat:14.616,lon:-61.059},{c:"973",n:"Guyane",city:"Cayenne",lat:4.9372,lon:-52.326},{c:"974",n:"La Réunion",city:"Saint-Denis",lat:-20.8789,lon:55.4481},{c:"976",n:"Mayotte",city:"Mamoudzou",lat:-12.7809,lon:45.2281}
+];
+
+const FC={
+  Gazole:{l:"Gazole",c:"#f59e0b",f:"gazole_prix",m:"gazole_maj"},
+  SP95:{l:"SP95",c:"#22c55e",f:"sp95_prix",m:"sp95_maj"},
+  SP98:{l:"SP98",c:"#3b82f6",f:"sp98_prix",m:"sp98_maj"},
+  E10:{l:"SP95-E10",c:"#10b981",f:"e10_prix",m:"e10_maj"},
+  E85:{l:"E85",c:"#a855f7",f:"e85_prix",m:"e85_maj"},
+  GPLc:{l:"GPLc",c:"#ec4899",f:"gplc_prix",m:"gplc_maj"},
+};
+const FK=Object.keys(FC);
+const BR=[
+{k:["leclerc","e.leclerc"],n:"E.Leclerc",bg:"#1e3a8a",fg:"#93c5fd",i:"🛒"},{k:["carrefour market","carrefour contact","carrefour express","carrefour"],n:"Carrefour",bg:"#1e40af",fg:"#93c5fd",i:"🛒"},{k:["intermarche","intermarch","intermarché"],n:"Intermarché",bg:"#9f1239",fg:"#fda4af",i:"🛒"},{k:["super u","systeme u","système u","hyper u","u express"],n:"Système U",bg:"#b91c1c",fg:"#fecaca",i:"🛒"},{k:["auchan"],n:"Auchan",bg:"#166534",fg:"#86efac",i:"🛒"},{k:["geant casino","géant casino","geant"],n:"Géant Casino",bg:"#166534",fg:"#86efac",i:"🛒"},{k:["casino"],n:"Casino",bg:"#166534",fg:"#86efac",i:"🛒"},{k:["cora"],n:"Cora",bg:"#9a3412",fg:"#fed7aa",i:"🛒"},{k:["lidl"],n:"Lidl",bg:"#1e40af",fg:"#93c5fd",i:"🛒"},{k:["netto"],n:"Netto",bg:"#854d0e",fg:"#fde68a",i:"🛒"},{k:["colruyt"],n:"Colruyt",bg:"#166534",fg:"#86efac",i:"🛒"},{k:["aldi"],n:"Aldi",bg:"#1e40af",fg:"#93c5fd",i:"🛒"},{k:["totalenergies","total access","relais total","relais des"],n:"TotalEnergies",bg:"#991b1b",fg:"#fecaca",i:"🔴"},{k:["total "],n:"Total",bg:"#991b1b",fg:"#fecaca",i:"🔴"},{k:["esso"],n:"Esso",bg:"#1e3a8a",fg:"#93c5fd",i:"🔵"},{k:["bp ","bp-"],n:"BP",bg:"#166534",fg:"#86efac",i:"🟢"},{k:["shell"],n:"Shell",bg:"#854d0e",fg:"#fde68a",i:"🟡"},{k:["avia"],n:"Avia",bg:"#1e3a8a",fg:"#bfdbfe",i:"🔷"},{k:["dyneff"],n:"Dyneff",bg:"#9a3412",fg:"#fed7aa",i:"🟠"},{k:["vito"],n:"Vito",bg:"#166534",fg:"#86efac",i:"🟢"},{k:["agip","eni "],n:"Agip/Eni",bg:"#854d0e",fg:"#fde68a",i:"🟡"},{k:["elan"],n:"Elan",bg:"#4c1d95",fg:"#c4b5fd",i:"🟣"}
+];
+
+// UTILS
+function hav(a,b,c,d){const R=6371,x=(c-a)*Math.PI/180,y=(d-b)*Math.PI/180;const z=Math.sin(x/2)**2+Math.cos(a*Math.PI/180)*Math.cos(c*Math.PI/180)*Math.sin(y/2)**2;return R*2*Math.atan2(Math.sqrt(z),Math.sqrt(1-z));}
+function fp(p){return(p!=null&&!isNaN(p))?p.toFixed(3)+" €":"—";}
+function ta(d){if(!d)return"";const m=Math.floor((Date.now()-new Date(d).getTime())/60000);if(m<0)return"à jour";if(m<60)return m+"min";if(m<1440)return Math.floor(m/60)+"h";return Math.floor(m/1440)+"j";}
+function esc(s){const d=document.createElement("div");d.textContent=s;return d.innerHTML;}
+function db(a,c,sv){const t=(a+" "+c+" "+sv).toLowerCase();for(const b of BR)for(const k of b.k)if(t.includes(k))return b;return null;}
+function bh(b){return b?'<span class="brand-badge" style="background:'+b.bg+';color:'+b.fg+'">'+b.i+' '+esc(b.n)+'</span>':'';}
+const gS='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>';
+const wS='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>';
+
+// STATE
+let cLat=null,cLon=null,cName="",cFuel="Gazole",resStations=[],resSort="price";
+let fLat=null,fLon=null,fName="",fStations=[];
+
+function showScreen(id){document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));document.getElementById(id).classList.add("active");window.scrollTo(0,0);}
+function checkReady(){document.getElementById("go-btn").disabled=!(cLat&&cLon&&cFuel);}
+
+// ==================== SCREEN 1: WELCOME ====================
+// Fuel grid
+const fg=document.getElementById("fg");
+FK.forEach(k=>{const c=FC[k];const b=document.createElement("button");b.className="fb"+(k===cFuel?" selected":"");b.style.setProperty("--fc",c.c);b.innerHTML='<div class="fb-d" style="background:'+c.c+'"></div><div class="fb-n">'+c.l+'</div>';b.onclick=()=>{cFuel=k;document.querySelectorAll(".fb").forEach(x=>x.classList.remove("selected"));b.classList.add("selected");checkReady();};fg.appendChild(b);});
+// Full screen fuel filter
+const ffFuel=document.getElementById("ff-fuel");FK.forEach(k=>{const o=document.createElement("option");o.value=k;o.textContent=FC[k].l;ffFuel.appendChild(o);});
+
+// Dept list
+const dl=document.getElementById("dl");
+function rD(f=""){const fi=f.toLowerCase();dl.innerHTML=DEPTS.filter(d=>(d.c+" "+d.n+" "+d.city).toLowerCase().includes(fi)).map(d=>'<div class="di'+(cLat===d.lat?" selected":"")+'" data-c="'+d.c+'">'+esc(d.c+" — "+d.n)+' <span style="color:#64748b;font-size:11px">('+esc(d.city)+')</span></div>').join("");
+dl.querySelectorAll(".di").forEach(el=>{el.onclick=()=>{const dept=DEPTS.find(d=>d.c===el.dataset.c);if(!dept)return;cLat=dept.lat;cLon=dept.lon;cName=dept.city;rD(document.getElementById("ds").value);const st=document.getElementById("dept-status");st.textContent="✅ "+dept.city+" ("+dept.n+")";st.className="loc-status show";checkReady();};});}
+rD();document.getElementById("ds").addEventListener("input",e=>rD(e.target.value));
+
+// Geo
+document.getElementById("btn-geo").onclick=()=>{
+  document.getElementById("btn-geo").classList.add("selected");document.getElementById("btn-dept").classList.remove("selected");
+  document.getElementById("dw").classList.remove("show");document.getElementById("dept-status").classList.remove("show");
+  const st=document.getElementById("geo-status");st.textContent="📡 Localisation en cours...";st.className="loc-status show";
+  if(!navigator.geolocation){st.textContent="❌ Non disponible";st.classList.add("error");return;}
+  navigator.geolocation.getCurrentPosition(pos=>{
+    cLat=pos.coords.latitude;cLon=pos.coords.longitude;st.textContent="✅ Position trouvée !";
+    fetch("https://api-adresse.data.gouv.fr/reverse/?lat="+cLat+"&lon="+cLon).then(r=>r.json()).then(d=>{
+      if(d.features&&d.features.length)cName=d.features[0].properties.city||"Ma position";else cName="Ma position";
+      st.textContent="✅ "+cName;checkReady();
+    }).catch(()=>{cName="Ma position";checkReady();});
+  },()=>{st.textContent="❌ Accès refusé — choisissez un département";st.classList.add("error");});
+};
+document.getElementById("btn-dept").onclick=()=>{
+  document.getElementById("btn-dept").classList.add("selected");document.getElementById("btn-geo").classList.remove("selected");
+  document.getElementById("geo-status").classList.remove("show");document.getElementById("dw").classList.add("show");
+};
+
+// GO
+document.getElementById("go-btn").onclick=()=>{if(!cLat||!cLon||!cFuel)return;showScreen("screen-results");loadResults();};
+document.getElementById("back-btn").onclick=()=>showScreen("screen-welcome");
+
+// ==================== SCREEN 2: RESULTS ====================
+// Sort tabs
+document.querySelectorAll(".sort-tab").forEach(t=>{t.onclick=()=>{resSort=t.dataset.sort;document.querySelectorAll(".sort-tab").forEach(x=>x.classList.remove("active"));t.classList.add("active");renderResults();}});
+
+async function loadResults(){
+  const fc=FC[cFuel];
+  document.getElementById("rh-title").textContent=fc.l+" — "+cName;
+  document.getElementById("rh-sub").textContent="Rayon 20 km";
+  document.getElementById("rh-badge").textContent=fc.l;document.getElementById("rh-badge").style.cssText="background:"+fc.c+"22;color:"+fc.c;
+  document.getElementById("res-loading").classList.add("show");document.getElementById("res-error").classList.remove("show");
+  document.getElementById("res-empty").classList.remove("show");document.getElementById("res-list").innerHTML="";
+  document.getElementById("res-count").textContent="";
+
+  const fields="id,adresse,ville,cp,geom,horaires_automate_24_24,services_service,"+fc.f+","+fc.m;
+  const where="within_distance(geom, geom'POINT("+cLon+" "+cLat+")', 20km) AND "+fc.f+" IS NOT NULL";
+  const url="https://data.economie.gouv.fr/api/explore/v2.1/catalog/datasets/prix-des-carburants-en-france-flux-instantane-v2/records?select="+encodeURIComponent(fields)+"&where="+encodeURIComponent(where)+"&limit=40";
+
+  try{
+    const res=await fetch(url);if(!res.ok)throw new Error("Erreur ("+res.status+")");
+    const data=await res.json();
+    resStations=(data.results||[]).map(r=>{
+      const rl=r.geom?r.geom.lat:0,rn=r.geom?r.geom.lon:0;
+      const svc=Array.isArray(r.services_service)?r.services_service.join(" "):(r.services_service||"");
+      return{id:r.id,addr:r.adresse||"",city:r.ville||"",cp:r.cp||"",lat:rl,lon:rn,dist:hav(cLat,cLon,rl,rn),is24h:r.horaires_automate_24_24==="Oui",brand:db(r.adresse||"",r.ville||"",svc),price:parseFloat(r[fc.f]),updated:r[fc.m]||null};
+    });
+    if(!resStations.length){document.getElementById("res-empty").classList.add("show");return;}
+    renderResults();
+  }catch(e){document.getElementById("res-error-msg").textContent="❌ "+e.message;document.getElementById("res-error").classList.add("show");}
+  finally{document.getElementById("res-loading").classList.remove("show");}
+}
+
+function renderResults(){
+  const fc=FC[cFuel];
+  let list=[...resStations];
+  if(resSort==="price")list.sort((a,b)=>a.price-b.price);
+  else list.sort((a,b)=>a.dist-b.dist);
+  const best=list.length?list.reduce((a,b)=>a.price<b.price?a:b):null;
+  document.getElementById("res-count").textContent=list.length+" station"+(list.length>1?"s":"")+" trouvée"+(list.length>1?"s":"");
+
+  document.getElementById("res-list").innerHTML=list.map((s,i)=>{
+    const isBest=best&&s.price===best.price;
+    const gU="https://www.google.com/maps/dir/?api=1&destination="+s.lat+","+s.lon;
+    const wU="https://waze.com/ul?ll="+s.lat+"%2C"+s.lon+"&navigate=yes";
+    return'<div class="card'+(isBest?' best':'')+'" style="animation-delay:'+(i*30)+'ms">'+
+      '<div class="card-top"><div class="card-left"><div class="rank">'+(i+1)+'</div><div style="min-width:0">'+
+        '<div class="brand-row">'+bh(s.brand)+(s.is24h?'<span class="tag-24">24h</span>':'')+(isBest?'<span class="tag-best">🏆</span>':'')+'</div>'+
+        '<div class="station-name">'+esc(s.city||"Station")+'</div>'+
+        '<div class="station-addr">'+esc(s.addr+(s.addr?", ":"")+s.cp+" "+s.city)+'</div>'+
+      '</div></div><div class="dist-badge">'+s.dist.toFixed(1)+' km</div></div>'+
+      '<div class="price-highlight" style="color:'+fc.c+'">'+fp(s.price)+' <span style="font-size:12px;color:#64748b;font-weight:400">'+ta(s.updated)+'</span></div>'+
+      '<div class="nav-btns">'+
+        '<a class="nav-btn nav-btn-gmaps" href="'+gU+'" target="_blank" rel="noopener noreferrer">'+gS+' Google Maps</a>'+
+        '<a class="nav-btn nav-btn-waze" href="'+wU+'" target="_blank" rel="noopener noreferrer">'+wS+' Waze</a>'+
+      '</div></div>';
+  }).join("");
+}
+
+// Other search
+document.getElementById("other-btn").onclick=()=>{
+  fLat=cLat;fLon=cLon;fName=cName;
+  document.getElementById("f-sub").textContent=cName;document.getElementById("f-input").value=cName;
+  document.getElementById("ff-fuel").value=cFuel;showScreen("screen-full");fetchFull();
+};
+document.getElementById("back-res-btn").onclick=()=>showScreen("screen-results");
+
+// ==================== SCREEN 3: FULL SEARCH ====================
+let fdb=null;const fInp=document.getElementById("f-input"),fSug=document.getElementById("f-sugg");
+fInp.addEventListener("input",()=>{clearTimeout(fdb);fdb=setTimeout(()=>fGeo(fInp.value),300);});
+document.addEventListener("click",e=>{if(!e.target.closest(".ss-box"))fSug.classList.remove("show");});
+
+async function fGeo(q){
+  if(!q||q.length<2){fSug.classList.remove("show");return;}
+  try{const r=await fetch("https://api-adresse.data.gouv.fr/search/?q="+encodeURIComponent(q)+"&limit=6&type=municipality");const d=await r.json();
+  const res=(d.features||[]).map(f=>({name:f.properties.label,lat:f.geometry.coordinates[1],lon:f.geometry.coordinates[0]}));
+  if(!res.length){fSug.classList.remove("show");return;}
+  fSug.innerHTML=res.map((r,i)=>'<div class="ss-item" data-i="'+i+'">📍 '+esc(r.name)+'</div>').join("");fSug.classList.add("show");
+  fSug.querySelectorAll(".ss-item").forEach((el,i)=>{el.onclick=()=>{fLat=res[i].lat;fLon=res[i].lon;fName=res[i].name;fInp.value=res[i].name;fSug.classList.remove("show");document.getElementById("f-sub").textContent=res[i].name;fetchFull();};});
+  }catch{fSug.classList.remove("show");}
+}
+
+async function fetchFull(){
+  if(!fLat)return;const rad=document.getElementById("ff-rad").value;
+  document.getElementById("f-loading").classList.add("show");document.getElementById("f-error").classList.remove("show");
+  document.getElementById("f-empty").classList.remove("show");document.getElementById("full-list").innerHTML="";
+  const fields="id,adresse,ville,cp,geom,horaires_automate_24_24,services_service,gazole_prix,gazole_maj,sp95_prix,sp95_maj,sp98_prix,sp98_maj,e10_prix,e10_maj,e85_prix,e85_maj,gplc_prix,gplc_maj";
+  const where="within_distance(geom, geom'POINT("+fLon+" "+fLat+")', "+rad+"km)";
+  const url="https://data.economie.gouv.fr/api/explore/v2.1/catalog/datasets/prix-des-carburants-en-france-flux-instantane-v2/records?select="+encodeURIComponent(fields)+"&where="+encodeURIComponent(where)+"&limit=80";
+  try{const res=await fetch(url);if(!res.ok)throw new Error("Erreur ("+res.status+")");const data=await res.json();
+  fStations=(data.results||[]).map(r=>{const rl=r.geom?r.geom.lat:0,rn=r.geom?r.geom.lon:0;const prices=[];
+  for(const[k,c]of Object.entries(FC)){const v=r[c.f];if(v!=null&&v!==""&&!isNaN(parseFloat(v)))prices.push({fuel:k,price:parseFloat(v),updated:r[c.m]||null});}
+  const svc=Array.isArray(r.services_service)?r.services_service.join(" "):(r.services_service||"");
+  return{id:r.id||(rl+"_"+rn),addr:r.adresse||"",city:r.ville||"",cp:r.cp||"",lat:rl,lon:rn,dist:hav(fLat,fLon,rl,rn),is24h:r.horaires_automate_24_24==="Oui",brand:db(r.adresse||"",r.ville||"",svc),prices};});
+  renderFull();}catch(e){document.getElementById("f-error-msg").textContent="❌ "+e.message;document.getElementById("f-error").classList.add("show");}
+  finally{document.getElementById("f-loading").classList.remove("show");}
+}
+
+function renderFull(){
+  const ff=document.getElementById("ff-fuel").value,fs=document.getElementById("ff-sort").value;
+  let list=fStations.filter(s=>{if(ff==="all")return true;return s.prices.some(p=>p.fuel===ff);});
+  list.sort((a,b)=>{if(fs==="distance")return a.dist-b.dist;const gm=s=>{let ps=s.prices;if(ff!=="all")ps=ps.filter(p=>p.fuel===ff);if(!ps.length)return 99999;return Math.min(...ps.map(p=>p.price));};return gm(a)-gm(b);});
+  const ch={};fStations.forEach(s=>s.prices.forEach(p=>{if(!ch[p.fuel]||p.price<ch[p.fuel].p)ch[p.fuel]={p:p.price,id:s.id};}));
+  document.getElementById("ff-cnt").textContent=list.length+" station"+(list.length>1?"s":"");
+  const ee=document.getElementById("f-empty");if(!list.length)ee.classList.add("show");else ee.classList.remove("show");
+  document.getElementById("full-list").innerHTML=list.map((s,idx)=>{
+    const isBest=Object.values(ch).some(c=>c.id===s.id);
+    const pH=s.prices.length===0?'<span style="font-size:11px;color:#475569;font-style:italic">Pas de prix</span>':s.prices.map(p=>{
+      const c=FC[p.fuel]||{l:p.fuel,c:"#888"};const best=ch[p.fuel]&&ch[p.fuel].p===p.price;
+      return'<div class="price-chip" style="border-color:'+c.c+';background:'+(best?c.c+'18':'rgba(255,255,255,0.03)')+'"><span class="price-fuel" style="color:'+c.c+'">'+c.l+'</span><span class="price-val'+(best?' is-best':'')+'">'+fp(p.price)+'</span><span class="updated-at">'+ta(p.updated)+'</span></div>';}).join("");
+    const gU="https://www.google.com/maps/dir/?api=1&destination="+s.lat+","+s.lon;
+    const wU="https://waze.com/ul?ll="+s.lat+"%2C"+s.lon+"&navigate=yes";
+    return'<div class="card'+(isBest?' best':'')+'" style="animation-delay:'+(idx*25)+'ms"><div class="card-top"><div class="card-left"><div class="rank">'+(idx+1)+'</div><div style="min-width:0"><div class="brand-row">'+bh(s.brand)+(s.is24h?'<span class="tag-24">24h</span>':'')+(isBest?'<span class="tag-best">🏆</span>':'')+'</div><div class="station-name">'+esc(s.city||"Station")+'</div><div class="station-addr">'+esc(s.addr+(s.addr?", ":"")+s.cp+" "+s.city)+'</div></div></div><div class="dist-badge">'+s.dist.toFixed(1)+' km</div></div><div class="prices-row">'+pH+'</div><div class="nav-btns"><a class="nav-btn nav-btn-gmaps" href="'+gU+'" target="_blank" rel="noopener noreferrer">'+gS+' Google Maps</a><a class="nav-btn nav-btn-waze" href="'+wU+'" target="_blank" rel="noopener noreferrer">'+wS+' Waze</a></div></div>';
+  }).join("");
+}
+
+document.getElementById("ff-fuel").addEventListener("change",renderFull);
+document.getElementById("ff-sort").addEventListener("change",renderFull);
+document.getElementById("ff-rad").addEventListener("change",fetchFull);
+</script>
+</body>
+</html>
