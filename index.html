@@ -1237,11 +1237,11 @@ function renderTutoStep(){
   document.getElementById("tuto-progress").innerHTML=dots;
 }
 
-// Auto-show tutorial on first visit
-if(!localStorage.getItem("wf_tuto_done")){
-  setTimeout(()=>openTuto(),600);
-  localStorage.setItem("wf_tuto_done","1");
-}
+// Tuto uniquement sur demande — pas d'auto-démarrage
+// if(!localStorage.getItem("wf_tuto_done")){
+//   setTimeout(()=>openTuto(),600);
+//   localStorage.setItem("wf_tuto_done","1");
+// }
 
 // ==================== DEPARTMENTS ====================
 const DEPTS=[
@@ -2307,7 +2307,7 @@ var itutActive = false;
 var ringEl, holeEl, bgEl, bubbleEl, cursorEl, skipBtn, nextBtn;
 
 // ===== MOTEUR VOIX =====
-var voiceEnabled = true;
+var voiceEnabled = false; // désactivé par défaut
 var voiceBtn = null;
 var frVoice = null;
 
@@ -2375,7 +2375,12 @@ function initDom(){
   voiceBtn = document.getElementById('itut-voice-btn');
   if(skipBtn) skipBtn.onclick = endTutorial;
   if(nextBtn) nextBtn.onclick = handleNext;
-  if(voiceBtn) voiceBtn.onclick = toggleVoice;
+  if(voiceBtn){
+    voiceBtn.onclick = toggleVoice;
+    // Refléter l'état initial désactivé
+    voiceBtn.textContent = '🔇';
+    voiceBtn.classList.add('muted');
+  }
   initVoice();
 }
 
