@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python3 -c \":*)",
+      "Bash(node -e \":*)",
+      "Bash(node:*)",
+      "Bash(grep -n \"test\\\\|isPro\\\\|set-pro\" /c/Users/arthu/Desktop/wolffuel/src/app/**/*.tsx)",
+      "Bash(grep -ao '.{0,200}add to home.{0,200}' /c/Users/arthu/Desktop/wolffuel/src/components/bodyHtml.ts)",
+      "Bash(npx next:*)",
+      "Bash(npx tsc:*)",
+      "Bash(npm run:*)"
+    ]
+  }
+}
