@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import './globals.css'
 import ProfileButton from '@/components/ProfileButton'
+import StarBackground from '@/components/StarBackground'
 
 export const metadata: Metadata = {
   title: 'WolfFuel — Prix Carburants France',
@@ -28,7 +29,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
       </head>
       <body>
-        {children}
+        <StarBackground />
+        <div style={{ position: 'relative', zIndex: 1 }}>
+          {children}
+        </div>
         <ProfileButton />
       </body>
     </html>

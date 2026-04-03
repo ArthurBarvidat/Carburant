@@ -88,8 +88,8 @@ function invoiceHtml(email: string, subscriptionId: string, date: string): strin
                   ['⭐', 'Stations favorites'],
                   ['📈', 'Historique des prix 30 jours'],
                   ['💰', 'Calcul de tes économies'],
-                  ['🤖', 'Chatbot IA avancé'],
                   ['🚫', 'Sans publicité'],
+                  ['🐺⭐', 'Badge Wolf Pro'],
                 ].map(([icon, label]) => `
                 <tr>
                   <td style="padding:6px 0;font-size:14px;color:#e2e8f0;">

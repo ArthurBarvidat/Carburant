@@ -1,13 +1,19 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import AnimatedBackground from '@/components/AnimatedBackground'
 import { supabase } from '@/lib/supabase'
 
 export default function RegisterPage() {
   const router = useRouter()
+
+  // Redirige vers l'accueil si déjà connecté
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => {
+      if (data.session) router.replace('/')
+    })
+  }, [router])
   const [pseudo, setPseudo] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -24,7 +30,7 @@ export default function RegisterPage() {
       return
     }
     setLoading(true)
-    const { error: err } = await supabase.auth.signUp({
+    const { data: signUpData, error: err } = await supabase.auth.signUp({
       email,
       password,
       options: { data: { pseudo } },
@@ -35,6 +41,13 @@ export default function RegisterPage() {
         : err.message)
       setLoading(false)
       return
+    }
+    if (signUpData.user) {
+      await supabase.from('profiles').upsert({
+        id: signUpData.user.id,
+        pseudo,
+        is_pro: false,
+      })
     }
     setLoading(false)
     setSuccess(true)
@@ -74,7 +87,6 @@ export default function RegisterPage() {
       fontFamily: "'DM Sans', sans-serif",
       color: '#e2e8f0',
     }}>
-      <AnimatedBackground />
       {/* Grain overlay */}
       <div style={{
         position: 'fixed', inset: 0, opacity: 0.03, pointerEvents: 'none', zIndex: 0,

@@ -136,52 +136,6 @@
 
   CANVASES.forEach(c => createBgForCanvas(c.canvasId, c.screenId));
 })();
-// ==================== TUTORIAL ====================
-const TUTO_STEPS=[
-  {icon:"🐺",bg:"linear-gradient(135deg,#581c87,#1a1130)",title:"Bienvenue sur WolfFuel !",desc:"Le loup traque les meilleurs prix de carburant pour vous, partout en France. Suivez ce guide rapide pour devenir un pro ! 🎮",btn:"C'est parti ! 🚀",xp:10},
-  {icon:"📍",bg:"linear-gradient(135deg,#1e3a8a,#1a1130)",title:"Étape 1 : Votre position",desc:"Utilisez le <b>GPS automatique</b> 📍 pour une localisation précise, ou choisissez votre <b>département</b> 🗺️ dans la liste. Le loup cherchera autour de vous !",btn:"Compris ! →",xp:15},
-  {icon:"⛽",bg:"linear-gradient(135deg,#065f46,#1a1130)",title:"Étape 2 : Votre carburant",desc:"Sélectionnez le type d'énergie : <b>Gazole, SP95, SP98, E10, E85, GPLc</b> ou <b>⚡ Électrique</b> pour localiser les bornes de recharge ! Le loup traque tout !",btn:"Top ! →",xp:15},
-  {icon:"🏷️",bg:"linear-gradient(135deg,#92400e,#1a1130)",title:"Les résultats",desc:"Le loup affiche les stations triées par <b>prix</b> 🏷️ ou par <b>distance</b> 📍. Chaque station montre l'<b>enseigne</b> (Leclerc, Total...), le <b>prix</b>, la <b>date de MàJ</b> et le <b>moyen de paiement</b> 💳💶.",btn:"Ensuite ? →",xp:20},
-  {icon:"🧭",bg:"linear-gradient(135deg,#1e40af,#1a1130)",title:"Navigation GPS",desc:"Appuyez sur <b>Google Maps</b> ou <b>Waze</b> pour lancer directement l'itinéraire vers la station. Sur mobile, ça ouvre l'appli ! 🚗",btn:"Et après ? →",xp:20},
-  {icon:"🔄",bg:"linear-gradient(135deg,#7c2d12,#1a1130)",title:"Recherche complète",desc:"Le bouton <b>\"Autre recherche\"</b> ouvre une page avec <b>toutes les villes</b>, <b>tous les carburants</b>, des filtres avancés et le <b>chatbot conseiller</b> 🐺 qui analyse les prix de votre zone !",btn:"Dernier truc ! →",xp:25},
-  {icon:"🏆",bg:"linear-gradient(135deg,#a855f7,#6d28d9)",title:"Vous êtes prêt !",desc:"<b>+105 XP gagnés !</b> 🎉<br><br>Vous maîtrisez WolfFuel comme un vrai loup. Allez traquer les meilleurs prix ! 🐺🔥",btn:"🐺 Commencer la chasse !",xp:0}
-];
-let tutoStep=0,tutoXP=0;
-
-function openTuto(){
-  startTutorial();
-}
-function closeTuto(){document.getElementById("tuto-overlay").classList.remove("open");}
-function nextTuto(){
-  tutoXP+=TUTO_STEPS[tutoStep].xp||0;
-  tutoStep++;
-  if(tutoStep>=TUTO_STEPS.length){closeTuto();return;}
-  renderTutoStep();
-}
-function renderTutoStep(){
-  const s=TUTO_STEPS[tutoStep];
-  document.getElementById("tuto-icon").textContent=s.icon;
-  document.getElementById("tuto-bg").style.background=s.bg;
-  document.getElementById("tuto-step-label").innerHTML="Étape "+(tutoStep+1)+"/"+TUTO_STEPS.length+(tutoXP?'<span class="tuto-xp">⭐ '+tutoXP+' XP</span>':"");
-  document.getElementById("tuto-title").textContent=s.title;
-  document.getElementById("tuto-desc").innerHTML=s.desc;
-  document.getElementById("tuto-next").textContent=s.btn;
-  if(tutoStep===TUTO_STEPS.length-1)document.getElementById("tuto-skip").style.display="none";
-  else document.getElementById("tuto-skip").style.display="block";
-  // Progress dots
-  let dots="";for(let i=0;i<TUTO_STEPS.length;i++){
-    let cls="tuto-dot";if(i<tutoStep)cls+=" done";if(i===tutoStep)cls+=" active";
-    dots+='<div class="'+cls+'"></div>';
-  }
-  document.getElementById("tuto-progress").innerHTML=dots;
-}
-
-// Tuto uniquement sur demande — pas d'auto-démarrage
-// if(!localStorage.getItem("wf_tuto_done")){
-//   setTimeout(()=>openTuto(),600);
-//   localStorage.setItem("wf_tuto_done","1");
-// }
-
 // ==================== DEPARTMENTS ====================
 const DEPTS=[
 {c:"01",n:"Ain",city:"Bourg-en-Bresse",lat:46.2057,lon:5.2254},{c:"02",n:"Aisne",city:"Laon",lat:49.5641,lon:3.6199},{c:"03",n:"Allier",city:"Moulins",lat:46.5648,lon:3.3346},{c:"04",n:"Alpes-de-Hte-Provence",city:"Digne",lat:44.0927,lon:6.2365},{c:"05",n:"Hautes-Alpes",city:"Gap",lat:44.5594,lon:6.0786},{c:"06",n:"Alpes-Maritimes",city:"Nice",lat:43.7102,lon:7.262},{c:"07",n:"Ardèche",city:"Privas",lat:44.7355,lon:4.5986},{c:"08",n:"Ardennes",city:"Charleville-Mézières",lat:49.7719,lon:4.7164},{c:"09",n:"Ariège",city:"Foix",lat:42.9653,lon:1.6052},{c:"10",n:"Aube",city:"Troyes",lat:48.2973,lon:4.0744},{c:"11",n:"Aude",city:"Carcassonne",lat:43.2121,lon:2.3536},{c:"12",n:"Aveyron",city:"Rodez",lat:44.3503,lon:2.575},{c:"13",n:"Bouches-du-Rhône",city:"Marseille",lat:43.2965,lon:5.3698},{c:"14",n:"Calvados",city:"Caen",lat:49.1829,lon:-.3707},{c:"15",n:"Cantal",city:"Aurillac",lat:44.9261,lon:2.4441},{c:"16",n:"Charente",city:"Angoulême",lat:45.6503,lon:.1606},{c:"17",n:"Charente-Maritime",city:"La Rochelle",lat:46.1603,lon:-1.1511},{c:"18",n:"Cher",city:"Bourges",lat:47.0833,lon:2.4},{c:"19",n:"Corrèze",city:"Tulle",lat:45.2667,lon:1.7667},{c:"21",n:"Côte-d'Or",city:"Dijon",lat:47.322,lon:5.0415},{c:"22",n:"Côtes-d'Armor",city:"Saint-Brieuc",lat:48.5141,lon:-2.7603},{c:"23",n:"Creuse",city:"Guéret",lat:46.1727,lon:1.874},{c:"24",n:"Dordogne",city:"Périgueux",lat:45.1846,lon:.7214},{c:"25",n:"Doubs",city:"Besançon",lat:47.2378,lon:6.0241},{c:"26",n:"Drôme",city:"Valence",lat:44.9334,lon:4.8924},{c:"27",n:"Eure",city:"Évreux",lat:49.0241,lon:1.1508},{c:"28",n:"Eure-et-Loir",city:"Chartres",lat:48.4565,lon:1.4893},{c:"29",n:"Finistère",city:"Quimper",lat:47.9974,lon:-4.0976},{c:"2A",n:"Corse-du-Sud",city:"Ajaccio",lat:41.9192,lon:8.7386},{c:"2B",n:"Haute-Corse",city:"Bastia",lat:42.6973,lon:9.4509},{c:"30",n:"Gard",city:"Nîmes",lat:43.8367,lon:4.3601},{c:"31",n:"Haute-Garonne",city:"Toulouse",lat:43.6047,lon:1.4442},{c:"32",n:"Gers",city:"Auch",lat:43.6461,lon:.5863},{c:"33",n:"Gironde",city:"Bordeaux",lat:44.8378,lon:-.5792},{c:"34",n:"Hérault",city:"Montpellier",lat:43.6108,lon:3.8767},{c:"35",n:"Ille-et-Vilaine",city:"Rennes",lat:48.1173,lon:-1.6778},{c:"36",n:"Indre",city:"Châteauroux",lat:46.8105,lon:1.6913},{c:"37",n:"Indre-et-Loire",city:"Tours",lat:47.3941,lon:.6848},{c:"38",n:"Isère",city:"Grenoble",lat:45.1885,lon:5.7245},{c:"39",n:"Jura",city:"Lons-le-Saunier",lat:46.674,lon:5.5567},{c:"40",n:"Landes",city:"Mont-de-Marsan",lat:43.894,lon:-.4994},{c:"41",n:"Loir-et-Cher",city:"Blois",lat:47.5861,lon:1.331},{c:"42",n:"Loire",city:"Saint-Étienne",lat:45.4397,lon:4.3872},{c:"43",n:"Haute-Loire",city:"Le Puy-en-Velay",lat:45.0435,lon:3.8853},{c:"44",n:"Loire-Atlantique",city:"Nantes",lat:47.2184,lon:-1.5536},{c:"45",n:"Loiret",city:"Orléans",lat:47.9029,lon:1.9039},{c:"46",n:"Lot",city:"Cahors",lat:44.4475,lon:1.4403},{c:"47",n:"Lot-et-Garonne",city:"Agen",lat:44.2033,lon:.6166},{c:"48",n:"Lozère",city:"Mende",lat:44.5188,lon:3.5015},{c:"49",n:"Maine-et-Loire",city:"Angers",lat:47.4712,lon:-.5518},{c:"50",n:"Manche",city:"Saint-Lô",lat:49.1167,lon:-1.0833},{c:"51",n:"Marne",city:"Châlons-en-Champagne",lat:48.9575,lon:4.3634},{c:"52",n:"Haute-Marne",city:"Chaumont",lat:48.1113,lon:5.1391},{c:"53",n:"Mayenne",city:"Laval",lat:48.0735,lon:-.7696},{c:"54",n:"Meurthe-et-Moselle",city:"Nancy",lat:48.6921,lon:6.1844},{c:"55",n:"Meuse",city:"Bar-le-Duc",lat:48.7739,lon:5.1594},{c:"56",n:"Morbihan",city:"Vannes",lat:47.6583,lon:-2.7608},{c:"57",n:"Moselle",city:"Metz",lat:49.1193,lon:6.1757},{c:"58",n:"Nièvre",city:"Nevers",lat:46.9896,lon:3.159},{c:"59",n:"Nord",city:"Lille",lat:50.6292,lon:3.0573},{c:"60",n:"Oise",city:"Beauvais",lat:49.4295,lon:2.0807},{c:"61",n:"Orne",city:"Alençon",lat:48.432,lon:.0912},{c:"62",n:"Pas-de-Calais",city:"Arras",lat:50.2916,lon:2.7775},{c:"63",n:"Puy-de-Dôme",city:"Clermont-Ferrand",lat:45.7772,lon:3.087},{c:"64",n:"Pyrénées-Atlantiques",city:"Pau",lat:43.2951,lon:-.3708},{c:"65",n:"Hautes-Pyrénées",city:"Tarbes",lat:43.2327,lon:.0782},{c:"66",n:"Pyrénées-Orientales",city:"Perpignan",lat:42.6988,lon:2.8959},{c:"67",n:"Bas-Rhin",city:"Strasbourg",lat:48.5734,lon:7.7521},{c:"68",n:"Haut-Rhin",city:"Colmar",lat:48.0794,lon:7.3587},{c:"69",n:"Rhône",city:"Lyon",lat:45.7578,lon:4.832},{c:"70",n:"Haute-Saône",city:"Vesoul",lat:47.6363,lon:6.1534},{c:"71",n:"Saône-et-Loire",city:"Mâcon",lat:46.307,lon:4.8344},{c:"72",n:"Sarthe",city:"Le Mans",lat:47.9962,lon:.1932},{c:"73",n:"Savoie",city:"Chambéry",lat:45.5646,lon:5.9178},{c:"74",n:"Haute-Savoie",city:"Annecy",lat:45.8992,lon:6.1294},{c:"75",n:"Paris",city:"Paris",lat:48.8566,lon:2.3522},{c:"76",n:"Seine-Maritime",city:"Rouen",lat:49.4432,lon:1.0993},{c:"77",n:"Seine-et-Marne",city:"Melun",lat:48.5394,lon:2.6608},{c:"78",n:"Yvelines",city:"Versailles",lat:48.8014,lon:2.1301},{c:"79",n:"Deux-Sèvres",city:"Niort",lat:46.3239,lon:-.4612},{c:"80",n:"Somme",city:"Amiens",lat:49.895,lon:2.3022},{c:"81",n:"Tarn",city:"Albi",lat:43.9287,lon:2.1489},{c:"82",n:"Tarn-et-Garonne",city:"Montauban",lat:44.0176,lon:1.3547},{c:"83",n:"Var",city:"Toulon",lat:43.1242,lon:5.928},{c:"84",n:"Vaucluse",city:"Avignon",lat:43.9493,lon:4.8055},{c:"85",n:"Vendée",city:"La Roche-sur-Yon",lat:46.6706,lon:-1.4267},{c:"86",n:"Vienne",city:"Poitiers",lat:46.5802,lon:.3404},{c:"87",n:"Haute-Vienne",city:"Limoges",lat:45.8315,lon:1.2578},{c:"88",n:"Vosges",city:"Épinal",lat:48.1725,lon:6.4498},{c:"89",n:"Yonne",city:"Auxerre",lat:47.7979,lon:3.5714},{c:"90",n:"Territoire de Belfort",city:"Belfort",lat:47.6397,lon:6.8628},{c:"91",n:"Essonne",city:"Évry",lat:48.6244,lon:2.4408},{c:"92",n:"Hauts-de-Seine",city:"Nanterre",lat:48.8924,lon:2.2071},{c:"93",n:"Seine-Saint-Denis",city:"Bobigny",lat:48.9065,lon:2.4404},{c:"94",n:"Val-de-Marne",city:"Créteil",lat:48.7905,lon:2.4559},{c:"95",n:"Val-d'Oise",city:"Pontoise",lat:49.0501,lon:2.1007},{c:"971",n:"Guadeloupe",city:"Basse-Terre",lat:15.9972,lon:-61.7311},{c:"972",n:"Martinique",city:"Fort-de-France",lat:14.616,lon:-61.059},{c:"973",n:"Guyane",city:"Cayenne",lat:4.9372,lon:-52.326},{c:"974",n:"La Réunion",city:"Saint-Denis",lat:-20.8789,lon:55.4481},{c:"976",n:"Mayotte",city:"Mamoudzou",lat:-12.7809,lon:45.2281}];
@@ -232,7 +186,7 @@ let cLat=null,cLon=null,cName="",cFuel="Gazole",resStations=[],resSort="price";
 let fLat=null,fLon=null,fName="",fStations=[];
 let realGpsLat=null,realGpsLon=null,gpsAsked=false;
 
-function showScreen(id){document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));document.getElementById(id).classList.add("active");window.scrollTo(0,0);const fab=document.getElementById("chat-fab");if(id==="screen-full"){fab.classList.add("visible");resetGpsBannerFull();}else{fab.classList.remove("visible");document.getElementById("chat-panel").classList.remove("open");}}
+function showScreen(id){document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));const sc=document.getElementById(id);if(sc)sc.classList.add("active");window.scrollTo(0,0);const fab=document.getElementById("chat-fab");const cp=document.getElementById("chat-panel");if(id==="screen-full"){if(fab)fab.classList.add("visible");resetGpsBannerFull();}else{if(fab)fab.classList.remove("visible");if(cp)cp.classList.remove("open");}}
 
 // Bannière GPS screen-full
 function resetGpsBannerFull(){
@@ -331,7 +285,7 @@ document.getElementById("btn-geo").onclick=()=>{
 document.getElementById("btn-dept").onclick=()=>{document.getElementById("btn-dept").classList.add("selected");document.getElementById("btn-geo").classList.remove("selected");document.getElementById("geo-status").classList.remove("show");document.getElementById("dw").classList.add("show");};
 
 // GO + BACK
-document.getElementById("go-btn").onclick=()=>{if(!cLat||!cLon||!cFuel)return;showScreen("screen-results");loadResults();};
+document.getElementById("go-btn").onclick=()=>{if(!cLat||!cLon||!cFuel)return;window.location.href='/resultat?lat='+cLat+'&lon='+cLon+'&name='+encodeURIComponent(cName)+'&fuel='+encodeURIComponent(cFuel);};
 document.getElementById("back-btn").onclick=()=>showScreen("screen-welcome");
 
 // GPS PRECISION
@@ -903,13 +857,12 @@ const isStandalone=window.matchMedia('(display-mode: standalone)').matches||navi
 
 if(!isStandalone){
   if(isIOS){
-    // iOS : toujours montrer le bouton (pas d'événement dispo)
-    document.getElementById('pwa-install-wrap').style.display='block';
+    const _pw=document.getElementById('pwa-install-wrap');if(_pw)_pw.style.display='block';
   }
   window.addEventListener('beforeinstallprompt',e=>{
     e.preventDefault();
     pwaPrompt=e;
-    document.getElementById('pwa-install-wrap').style.display='block';
+    const _pw=document.getElementById('pwa-install-wrap');if(_pw)_pw.style.display='block';
   });
 }
 
@@ -1567,16 +1520,8 @@ function simulateCursorClick(selector, callback){
   }, 60);
 }
 
-window.openTuto = function(){ window.startTutorial(); };
-
-if(!localStorage.getItem('wf_itut_done')){
-  setTimeout(function(){
-    var tov = document.getElementById('tuto-overlay');
-    if(tov) tov.classList.remove('open');
-    window.startTutorial();
-    localStorage.setItem('wf_itut_done','1');
-  }, 900);
-}
+window.openTuto = function(){};
+localStorage.setItem('wf_itut_done','1');
 
 })();
 
@@ -1602,24 +1547,26 @@ document.addEventListener("DOMContentLoaded",function(){
 
 function showScreen(id){
   document.querySelectorAll(".screen").forEach(function(s){s.classList.remove("active");});
-  document.getElementById(id).classList.add("active");
+  var sc=document.getElementById(id);
+  if(sc) sc.classList.add("active");
   window.scrollTo(0,0);
   var fab=document.getElementById("chat-fab");
   var fabR=document.getElementById("chat-fab-results");
+  var cp=document.getElementById("chat-panel");
   if(id==="screen-full"){
-    fab.classList.add("visible");
-    if(fabR)fabR.style.display="none";
+    if(fab) fab.classList.add("visible");
+    if(fabR) fabR.style.display="none";
     resetGpsBannerFull();
   }else if(id==="screen-results"){
-    fab.classList.remove("visible");
-    document.getElementById("chat-panel").classList.remove("open");
-    if(fabR)fabR.style.display="flex";
+    if(fab) fab.classList.remove("visible");
+    if(cp) cp.classList.remove("open");
+    if(fabR) fabR.style.display="flex";
   }else{
-    fab.classList.remove("visible");
-    document.getElementById("chat-panel").classList.remove("open");
-    if(fabR)fabR.style.display="none";
+    if(fab) fab.classList.remove("visible");
+    if(cp) cp.classList.remove("open");
+    if(fabR) fabR.style.display="none";
     var cpr=document.getElementById("chat-panel-results");
-    if(cpr)cpr.classList.remove("open");
+    if(cpr) cpr.classList.remove("open");
   }
 }
 
@@ -1855,8 +1802,8 @@ async function sendChatResults(){
   sendChatFreeText("chat-messages-results", text);
 }
 
-document.getElementById("chat-send-results").addEventListener("click",sendChatResults);
-document.getElementById("chat-input-results").addEventListener("keydown",function(e){if(e.key==="Enter")sendChatResults();});
+const _csr=document.getElementById("chat-send-results");if(_csr)_csr.addEventListener("click",sendChatResults);
+const _cir=document.getElementById("chat-input-results");if(_cir)_cir.addEventListener("keydown",function(e){if(e.key==="Enter")sendChatResults();});
 
 function showLegal(){
   if(window.endTutorial) window.endTutorial();

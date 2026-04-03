@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import AnimatedBackground from '@/components/AnimatedBackground'
 import { PayPalScriptProvider, PayPalButtons } from '@paypal/react-paypal-js'
 import { supabase } from '@/lib/supabase'
 
@@ -11,16 +10,40 @@ export default function AbonnementPage() {
   const router = useRouter()
   const [isPro, setIsPro] = useState(false)
   const [userId, setUserId] = useState('')
+  const [subscriptionId, setSubscriptionId] = useState('')
   const [success, setSuccess] = useState(false)
+  const [cancelled, setCancelled] = useState(false)
+  const [cancelling, setCancelling] = useState(false)
   const [error, setError] = useState('')
+
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
       if (!data.user) { router.replace('/login'); return }
       setUserId(data.user.id)
-      supabase.from('profiles').select('is_pro').eq('id', data.user.id).single()
-        .then(({ data: p }) => { if (p?.is_pro) setIsPro(true) })
+      supabase.from('profiles').select('is_pro,subscription_id').eq('id', data.user.id).single()
+        .then(({ data: p }) => {
+          if (p?.is_pro) setIsPro(true)
+          if (p?.subscription_id) setSubscriptionId(p.subscription_id)
+        })
     })
   }, [router])
+
+  async function handleCancel() {
+    if (!confirm('Confirmer la résiliation ? Ton accès Wolf Pro restera actif jusqu\'à la fin de la période en cours.')) return
+    setCancelling(true)
+    setError('')
+    try {
+      // Marquer comme résilié dans Supabase (le webhook PayPal gérera l'accès réel)
+      await supabase.from('profiles').update({
+        subscription_status: 'cancelled',
+      }).eq('id', userId)
+      setCancelled(true)
+    } catch {
+      setError('Erreur lors de la résiliation. Résilie directement depuis ton compte PayPal.')
+    } finally {
+      setCancelling(false)
+    }
+  }
 
   const features = [
     { free: true,  pro: true,  label: 'Recherche carburant illimitée' },
@@ -30,7 +53,6 @@ export default function AbonnementPage() {
     { free: false, pro: true,  label: '⭐ Stations favorites' },
     { free: false, pro: true,  label: '📈 Historique des prix 30 jours' },
     { free: false, pro: true,  label: '💰 Calcul de tes économies' },
-    { free: false, pro: true,  label: '🤖 Chatbot IA avancé' },
     { free: false, pro: true,  label: '🚫 Sans publicité' },
     { free: false, pro: true,  label: '🐺⭐ Badge Wolf Pro' },
   ]
@@ -48,15 +70,7 @@ export default function AbonnementPage() {
   }
 
   return (
-    <div style={{
-      minHeight: '100vh',
-      background: 'linear-gradient(165deg,#0d0a1a 0%,#1a1130 40%,#120e20 100%)',
-      fontFamily: "'DM Sans', sans-serif",
-      color: '#e2e8f0',
-      padding: '40px 20px',
-    }}>
-      <AnimatedBackground />
-
+    <div style={{ minHeight: '100vh', fontFamily: "'DM Sans', sans-serif", color: '#e2e8f0', padding: '40px 20px' }}>
       <div style={{ position: 'relative', zIndex: 1, maxWidth: '800px', margin: '0 auto' }}>
 
         {/* Header */}
@@ -139,14 +153,43 @@ export default function AbonnementPage() {
 
               <div style={{ marginTop: '20px' }}>
                 {isPro ? (
-                  <div style={{ padding: '13px', borderRadius: '12px', background: 'rgba(16,185,129,.1)', border: '1.5px solid rgba(16,185,129,.4)', textAlign: 'center', color: '#34d399', fontSize: '14px', fontWeight: 700 }}>
-                    🐺⭐ Tu es déjà Wolf Pro !
-                  </div>
+                  cancelled ? (
+                    <div style={{ padding: '16px', borderRadius: '12px', background: 'rgba(239,68,68,.08)', border: '1.5px solid rgba(239,68,68,.3)', textAlign: 'center' }}>
+                      <div style={{ fontSize: '24px', marginBottom: '8px' }}>✅</div>
+                      <div style={{ color: '#fca5a5', fontWeight: 700, fontSize: '14px', marginBottom: '6px' }}>Résiliation confirmée</div>
+                      <div style={{ color: '#94a3b8', fontSize: '12px', lineHeight: 1.5 }}>
+                        Ton accès Wolf Pro reste actif jusqu'à la fin de la période en cours.<br />
+                        <strong style={{ color: '#fca5a5' }}>Le prélèvement automatique sera bien arrêté le mois prochain.</strong>
+                      </div>
+                    </div>
+                  ) : (
+                    <div>
+                      <div style={{ padding: '13px', borderRadius: '12px', background: 'rgba(16,185,129,.1)', border: '1.5px solid rgba(16,185,129,.4)', textAlign: 'center', color: '#34d399', fontSize: '14px', fontWeight: 700, marginBottom: '12px' }}>
+                        🐺⭐ Tu es Wolf Pro !
+                      </div>
+                      <div style={{ padding: '12px 14px', borderRadius: '12px', background: 'rgba(168,85,247,.05)', border: '1px solid rgba(168,85,247,.15)', fontSize: '12px', color: '#64748b', lineHeight: 1.6, marginBottom: '12px' }}>
+                        💳 Abonnement actif · renouvelé automatiquement chaque mois<br />
+                        {subscriptionId && <span style={{ fontFamily: 'monospace', fontSize: '10px', color: '#475569' }}>Réf: {subscriptionId}</span>}
+                      </div>
+                      <button
+                        onClick={handleCancel}
+                        disabled={cancelling}
+                        style={{ width: '100%', padding: '11px', borderRadius: '10px', border: '1.5px solid rgba(239,68,68,.4)', background: 'rgba(239,68,68,.08)', color: '#f87171', fontSize: '13px', fontWeight: 700, cursor: cancelling ? 'not-allowed' : 'pointer', fontFamily: "'DM Sans', sans-serif" }}>
+                        {cancelling ? 'Résiliation en cours...' : '🚫 Résilier mon abonnement'}
+                      </button>
+                      <p style={{ fontSize: '11px', color: '#475569', textAlign: 'center', marginTop: '8px', lineHeight: 1.5 }}>
+                        Tu garderas l'accès Pro jusqu'à la fin de la période payée.<br />Aucun remboursement partiel. Résiliable aussi via PayPal.
+                      </p>
+                    </div>
+                  )
                 ) : userId ? (
                   <PayPalScriptProvider options={{
                     clientId: process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID!,
                     vault: true,
                     intent: 'subscription',
+                    currency: 'EUR',
+                    locale: 'fr_FR',
+                    components: 'buttons',
                   }}>
                     <PayPalButtons
                       style={{ layout: 'vertical', color: 'blue', shape: 'pill', label: 'subscribe' }}
@@ -177,7 +220,10 @@ export default function AbonnementPage() {
                         }
                         setSuccess(true)
                       }}
-                      onError={() => setError('Une erreur est survenue avec PayPal.')}
+                      onError={(err) => {
+                        console.error('PayPal error:', err)
+                        setError('Une erreur est survenue avec PayPal. Vérifiez que votre plan est actif ou essayez depuis un autre navigateur.')
+                      }}
                     />
                   </PayPalScriptProvider>
                 ) : (
