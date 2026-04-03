@@ -163,9 +163,20 @@ function AbonnementContent() {
               background: 'linear-gradient(135deg,#34d399,#10b981)',
               WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text',
             }}>Bienvenue dans la meute !</h2>
-            <p style={{ color: '#94a3b8', marginBottom: '28px' }}>
+            <p style={{ color: '#94a3b8', marginBottom: '16px' }}>
               Tu es maintenant <strong style={{ color: '#c084fc' }}>🐺⭐ Wolf Pro</strong>
             </p>
+            <p style={{ color: '#64748b', fontSize: '14px', marginBottom: '8px' }}>
+              Merci pour ta confiance ! 🙏
+            </p>
+            <div style={{
+              padding: '14px 18px', borderRadius: '12px', marginBottom: '24px',
+              background: 'rgba(16,185,129,.08)', border: '1px solid rgba(16,185,129,.2)',
+              fontSize: '13px', color: '#6ee7b7', lineHeight: 1.6,
+            }}>
+              📧 Une facture vient d'être envoyée à ton adresse email.<br />
+              <span style={{ color: '#475569', fontSize: '12px' }}>Pense à vérifier tes spams si tu ne la reçois pas.</span>
+            </div>
             <button onClick={() => router.replace('/')} style={{
               padding: '14px 32px', borderRadius: '14px', border: 'none',
               background: 'linear-gradient(135deg,#a855f7,#7c3aed)',
