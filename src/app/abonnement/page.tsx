@@ -1,45 +1,81 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
-import Link from 'next/link'
-import { PayPalScriptProvider, PayPalButtons } from '@paypal/react-paypal-js'
+import { useState, useEffect, Suspense } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 
-export default function AbonnementPage() {
+function AbonnementContent() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [isPro, setIsPro] = useState(false)
   const [userId, setUserId] = useState('')
+  const [userEmail, setUserEmail] = useState('')
   const [subscriptionId, setSubscriptionId] = useState('')
   const [success, setSuccess] = useState(false)
   const [cancelled, setCancelled] = useState(false)
   const [cancelling, setCancelling] = useState(false)
+  const [subscribing, setSubscribing] = useState(false)
   const [error, setError] = useState('')
 
   useEffect(() => {
+    // Vérifier si retour depuis Stripe
+    if (searchParams.get('success') === 'true') {
+      setSuccess(true)
+    }
+
     supabase.auth.getUser().then(({ data }) => {
       if (!data.user) { router.replace('/login'); return }
       setUserId(data.user.id)
-      supabase.from('profiles').select('is_pro,subscription_id').eq('id', data.user.id).single()
+      setUserEmail(data.user.email ?? '')
+      supabase.from('profiles').select('is_pro,subscription_id,subscription_status').eq('id', data.user.id).single()
         .then(({ data: p }) => {
           if (p?.is_pro) setIsPro(true)
           if (p?.subscription_id) setSubscriptionId(p.subscription_id)
+          if (p?.subscription_status === 'cancelled') setCancelled(true)
         })
     })
-  }, [router])
+  }, [router, searchParams])
+
+  async function handleSubscribe() {
+    setSubscribing(true)
+    setError('')
+    try {
+      const res = await fetch('/api/create-checkout-session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, email: userEmail }),
+      })
+      const data = await res.json()
+      if (data.url) {
+        window.location.href = data.url
+      } else {
+        setError(data.error ?? 'Erreur lors de la création du paiement.')
+        setSubscribing(false)
+      }
+    } catch {
+      setError('Erreur réseau. Réessayez.')
+      setSubscribing(false)
+    }
+  }
 
   async function handleCancel() {
     if (!confirm('Confirmer la résiliation ? Ton accès Wolf Pro restera actif jusqu\'à la fin de la période en cours.')) return
     setCancelling(true)
     setError('')
     try {
-      // Marquer comme résilié dans Supabase (le webhook PayPal gérera l'accès réel)
-      await supabase.from('profiles').update({
-        subscription_status: 'cancelled',
-      }).eq('id', userId)
-      setCancelled(true)
+      const res = await fetch('/api/cancel-subscription', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId }),
+      })
+      const data = await res.json()
+      if (data.success) {
+        setCancelled(true)
+      } else {
+        setError(data.error ?? 'Erreur lors de la résiliation.')
+      }
     } catch {
-      setError('Erreur lors de la résiliation. Résilie directement depuis ton compte PayPal.')
+      setError('Erreur réseau. Réessayez.')
     } finally {
       setCancelling(false)
     }
@@ -178,54 +214,31 @@ export default function AbonnementPage() {
                         {cancelling ? 'Résiliation en cours...' : '🚫 Résilier mon abonnement'}
                       </button>
                       <p style={{ fontSize: '11px', color: '#475569', textAlign: 'center', marginTop: '8px', lineHeight: 1.5 }}>
-                        Tu garderas l'accès Pro jusqu'à la fin de la période payée.<br />Aucun remboursement partiel. Résiliable aussi via PayPal.
+                        Tu garderas l'accès Pro jusqu'à la fin de la période payée.<br />Aucun remboursement partiel.
                       </p>
                     </div>
                   )
                 ) : userId ? (
-                  <PayPalScriptProvider options={{
-                    clientId: process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID!,
-                    vault: true,
-                    intent: 'subscription',
-                    currency: 'EUR',
-                    locale: 'fr_FR',
-                    components: 'buttons',
-                  }}>
-                    <PayPalButtons
-                      style={{ layout: 'vertical', color: 'blue', shape: 'pill', label: 'subscribe' }}
-                      createSubscription={(_data, actions) => {
-                        return actions.subscription.create({
-                          plan_id: process.env.NEXT_PUBLIC_PAYPAL_PLAN_ID!,
-                          custom_id: userId,
-                        })
+                  <div>
+                    <button
+                      onClick={handleSubscribe}
+                      disabled={subscribing}
+                      style={{
+                        width: '100%', padding: '15px', borderRadius: '14px', border: 'none',
+                        background: subscribing ? 'rgba(168,85,247,.4)' : 'linear-gradient(135deg,#a855f7,#7c3aed,#6d28d9)',
+                        color: '#fff', fontSize: '16px', fontWeight: 800,
+                        fontFamily: "'DM Sans', sans-serif",
+                        cursor: subscribing ? 'not-allowed' : 'pointer',
+                        transition: 'all .2s',
+                        boxShadow: subscribing ? 'none' : '0 4px 20px rgba(168,85,247,.4)',
                       }}
-                      onApprove={async (data) => {
-                        await supabase.from('profiles').upsert({
-                          id: userId,
-                          is_pro: true,
-                          subscription_id: data.subscriptionID,
-                          subscription_status: 'active',
-                        })
-                        // Envoyer la facture par email
-                        const { data: authData } = await supabase.auth.getUser()
-                        if (authData.user?.email && data.subscriptionID) {
-                          fetch('/api/send-invoice', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                              email: authData.user.email,
-                              subscriptionId: data.subscriptionID,
-                            }),
-                          })
-                        }
-                        setSuccess(true)
-                      }}
-                      onError={(err) => {
-                        console.error('PayPal error:', err)
-                        setError('Une erreur est survenue avec PayPal. Vérifiez que votre plan est actif ou essayez depuis un autre navigateur.')
-                      }}
-                    />
-                  </PayPalScriptProvider>
+                    >
+                      {subscribing ? '⏳ Redirection...' : '🐺 Devenir Wolf Pro — 2,99€/mois'}
+                    </button>
+                    <p style={{ fontSize: '11px', color: '#475569', textAlign: 'center', marginTop: '10px', lineHeight: 1.5 }}>
+                      Paiement sécurisé par Stripe · Carte bancaire acceptée<br />Résiliable à tout moment
+                    </p>
+                  </div>
                 ) : (
                   <div style={{ padding: '13px', borderRadius: '12px', background: 'rgba(168,85,247,.1)', textAlign: 'center', color: '#94a3b8', fontSize: '14px' }}>
                     Chargement...
@@ -243,7 +256,7 @@ export default function AbonnementPage() {
         )}
 
         <p style={{ textAlign: 'center', color: '#475569', fontSize: '13px', marginTop: '32px', marginBottom: '12px' }}>
-          🔒 Paiement sécurisé par PayPal · Résiliable à tout moment
+          🔒 Paiement sécurisé par Stripe · Résiliable à tout moment
         </p>
 
         <p style={{ textAlign: 'center', marginTop: '16px' }}>
@@ -253,5 +266,13 @@ export default function AbonnementPage() {
         </p>
       </div>
     </div>
+  )
+}
+
+export default function AbonnementPage() {
+  return (
+    <Suspense fallback={<div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94a3b8' }}>Chargement...</div>}>
+      <AbonnementContent />
+    </Suspense>
   )
 }

@@ -140,24 +140,6 @@ export default function LoginPage() {
             Continuer avec Google
           </button>
 
-          <button
-            type="button"
-            onClick={handleApple}
-            style={{
-              width: '100%', padding: '13px 16px', borderRadius: '12px',
-              border: '1.5px solid rgba(255,255,255,.12)',
-              background: 'rgba(255,255,255,.05)',
-              color: '#f1f5f9', fontSize: '15px', fontWeight: 600,
-              fontFamily: "'DM Sans', sans-serif",
-              cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
-              transition: 'all .2s',
-            }}
-            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,.1)'; (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,.25)' }}
-            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,.05)'; (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,.12)' }}
-          >
-            <svg width="18" height="18" viewBox="0 0 814 1000" fill="#f1f5f9"><path d="M788.1 340.9c-5.8 4.5-108.2 62.2-108.2 190.5 0 148.4 130.3 200.9 134.2 202.2-.6 3.2-20.7 71.9-68.7 141.9-42.8 61.6-87.5 123.1-155.5 123.1s-85.5-39.5-164-39.5c-76 0-103.7 40.8-165.9 40.8s-105-57.8-155.5-127.4C46 790.9 0 695.7 0 605.6c0-178.1 115.6-272.4 229.3-272.4 60.4 0 110.7 39.5 149.2 39.5 36.7 0 94.2-42.3 165.9-42.3 26.9 0 108.2 2.6 168 86.3zm-119.3-160.7c28.8-34 49.5-81.4 49.5-128.7 0-6.5-.6-13-1.9-18.2-46.9 1.9-101.4 31.3-134.8 70.8-26.2 30-50.1 77.4-50.1 125.4 0 7.1 1.3 14.2 1.9 16.5 3.2.6 8.4 1.3 13.6 1.3 42.2 0 92.2-28.1 121.8-67.1z"/></svg>
-            Continuer avec Apple
-          </button>
         </div>
 
         {/* Séparateur */}
@@ -334,12 +316,6 @@ export default function LoginPage() {
           </Link>
         </p>
 
-        {/* Lien retour accueil */}
-        <p style={{ textAlign: 'center', marginTop: '10px' }}>
-          <Link href="/" style={{ fontSize: '13px', color: '#64748b', textDecoration: 'none', fontWeight: 600 }}>
-            ← Retour à l&apos;accueil
-          </Link>
-        </p>
       </div>
     </div>
   )

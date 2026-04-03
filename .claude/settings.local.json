@@ -10,7 +10,8 @@
       "Bash(npx tsc:*)",
       "Bash(npm run:*)",
       "Bash(curl -s \"https://data.economie.gouv.fr/api/explore/v2.1/catalog/datasets/prix-des-carburants-en-france-flux-instantane-v2/records?select=id%2Cadresse%2Cville%2Ccp%2Cgeom%2Choraires_automate_24_24%2Cservices_service%2Ccarburants_disponibles%2Ce85_prix%2Ce85_maj&where=within_distance\\(geom%2C%20geom''''POINT\\(6.2365%2044.0927\\)''''%2C%2020km\\)&limit=5\")",
-      "Bash(grep -o '.screen[^-][^\\\\\\\\]*{[^}]*}' \"c:/Users/arthu/Desktop/Projet_perso/Carburant/src/components/bodyHtml.ts\")"
+      "Bash(grep -o '.screen[^-][^\\\\\\\\]*{[^}]*}' \"c:/Users/arthu/Desktop/Projet_perso/Carburant/src/components/bodyHtml.ts\")",
+      "Bash(npm install:*)"
     ]
   }
 }
