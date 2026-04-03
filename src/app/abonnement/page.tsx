@@ -99,7 +99,7 @@ function AbonnementContent() {
       })
       const data = await res.json()
       if (data.success) {
-        setCancelled(true)
+        router.replace('/au-revoir')
       } else {
         setError(data.error ?? 'Erreur lors de la résiliation.')
       }
