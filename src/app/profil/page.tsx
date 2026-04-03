@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import AnimatedBackground from '@/components/AnimatedBackground'
 import { supabase } from '@/lib/supabase'
 
 type Profile = {
@@ -94,7 +93,6 @@ export default function ProfilPage() {
 
   const s: React.CSSProperties = {
     minHeight: '100vh',
-    background: 'linear-gradient(165deg,#0d0a1a 0%,#1a1130 40%,#120e20 100%)',
     fontFamily: "'DM Sans', sans-serif",
     color: '#e2e8f0',
     padding: '24px 20px',
@@ -119,8 +117,7 @@ export default function ProfilPage() {
 
   return (
     <div style={s}>
-      <AnimatedBackground />
-      <div style={{ position: 'relative', zIndex: 1, maxWidth: '480px', margin: '0 auto' }}>
+      <div style={{ maxWidth: '480px', margin: '0 auto' }}>
 
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '28px' }}>
@@ -290,8 +287,8 @@ export default function ProfilPage() {
                 { label: '⭐ Stations favorites', ok: profile.is_pro },
                 { label: '📈 Historique des prix', ok: profile.is_pro },
                 { label: '💰 Calcul économies', ok: profile.is_pro },
-                { label: '🤖 Chatbot IA avancé', ok: profile.is_pro },
                 { label: '🚫 Sans publicité', ok: profile.is_pro },
+                { label: '🐺⭐ Badge Wolf Pro', ok: profile.is_pro },
               ].map((f, i) => (
                 <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 0', borderBottom: i < 5 ? '1px solid rgba(168,85,247,.08)' : 'none' }}>
                   <span style={{ fontSize: '14px', color: f.ok ? '#e2e8f0' : '#475569' }}>{f.label}</span>
