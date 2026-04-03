@@ -92,7 +92,7 @@ export default function MentionsLegalesPage() {
           },
           {
             title: '8. Source des données carburants',
-            content: <p style={{ fontSize: '14px', color: '#94a3b8', lineHeight: 1.7 }}>Les prix proviennent des données ouvertes du gouvernement français (<strong style={{ color: '#e2e8f0' }}>data.gouv.fr</strong>) sous licence Ouverte. WolfFuel ne garantit pas l&apos;exactitude en temps réel des prix affichés.</p>
+            content: <p style={{ fontSize: '14px', color: '#94a3b8', lineHeight: 1.7 }}>Les prix proviennent des données ouvertes du gouvernement français (<strong style={{ color: '#e2e8f0' }}>data.gouv.fr</strong>) sous licence Ouverte. Ces données sont mises à jour régulièrement mais peuvent ne pas refléter les prix en temps réel — ce délai reste exceptionnel et indépendant de WolfFuel. WolfFuel ne garantit pas l&apos;exactitude en temps réel des prix affichés et décline toute responsabilité pour les éventuelles erreurs provenant des sources officielles.</p>
           },
           {
             title: '9. Abonnement Wolf Pro',
