@@ -22,7 +22,7 @@ export async function GET(req: NextRequest) {
   // Récupérer les profils des amis
   const friendIds = friends.map(f => f.user_id === userId ? f.friend_id : f.user_id)
   const { data: profiles } = friendIds.length
-    ? await admin.from('profiles').select('id, pseudo, is_pro, last_seen').in('id', friendIds)
+    ? await admin.from('profiles').select('id, pseudo, is_pro, last_seen, avatar_url').in('id', friendIds)
     : { data: [] }
 
   const profileMap = Object.fromEntries((profiles ?? []).map(p => [p.id, p]))

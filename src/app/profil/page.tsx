@@ -10,6 +10,7 @@ type Profile = {
   is_pro?: boolean
   subscription_status?: string
   created_at?: string
+  avatar_url?: string
 }
 
 export default function ProfilPage() {
@@ -23,6 +24,7 @@ export default function ProfilPage() {
   const [savingPseudo, setSavingPseudo] = useState(false)
   const [pseudoError, setPseudoError] = useState('')
   const [pseudoOk, setPseudoOk] = useState(false)
+  const [uploadingAvatar, setUploadingAvatar] = useState(false)
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
@@ -54,6 +56,22 @@ export default function ProfilPage() {
         })
     })
   }, [router])
+
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file || !userId) return
+    if (file.size > 2 * 1024 * 1024) { alert('Image trop lourde (max 2 Mo)'); return }
+    setUploadingAvatar(true)
+    const ext = file.name.split('.').pop()
+    const path = `${userId}/avatar.${ext}`
+    const { error: uploadError } = await supabase.storage.from('avatars').upload(path, file, { upsert: true })
+    if (uploadError) { setUploadingAvatar(false); return }
+    const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(path)
+    const avatar_url = urlData.publicUrl + '?t=' + Date.now()
+    await supabase.from('profiles').update({ avatar_url }).eq('id', userId)
+    setProfile(p => ({ ...p, avatar_url }))
+    setUploadingAvatar(false)
+  }
 
   const savePseudo = async () => {
     if (!pseudoEdit.trim() || !userId) return
@@ -135,13 +153,31 @@ export default function ProfilPage() {
           <>
             {/* Avatar + statut */}
             <div style={{ ...card, textAlign: 'center', padding: '28px' }}>
-              <div style={{
-                width: '72px', height: '72px', borderRadius: '50%', margin: '0 auto 12px',
-                background: 'linear-gradient(135deg,rgba(168,85,247,.3),rgba(124,58,237,.2))',
-                border: '2px solid rgba(168,85,247,.4)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: '32px',
-              }}>🐺</div>
+              <div style={{ position: 'relative', width: '80px', margin: '0 auto 12px' }}>
+                <div style={{
+                  width: '80px', height: '80px', borderRadius: '50%',
+                  background: 'linear-gradient(135deg,rgba(168,85,247,.3),rgba(124,58,237,.2))',
+                  border: '2px solid rgba(168,85,247,.4)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: '32px', overflow: 'hidden',
+                }}>
+                  {profile.avatar_url
+                    ? <img src={profile.avatar_url} alt="avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    : '🐺'
+                  }
+                </div>
+                <label style={{
+                  position: 'absolute', bottom: 0, right: 0,
+                  width: '26px', height: '26px', borderRadius: '50%',
+                  background: 'linear-gradient(135deg,#a855f7,#7c3aed)',
+                  border: '2px solid #0d0a1a',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  cursor: 'pointer', fontSize: '12px',
+                }}>
+                  {uploadingAvatar ? '⏳' : '📷'}
+                  <input type="file" accept="image/*" onChange={handleAvatarChange} style={{ display: 'none' }} />
+                </label>
+              </div>
               <div style={{ fontSize: '17px', fontWeight: 700, color: '#f1f5f9', marginBottom: '6px' }}>
                 {profile.pseudo ?? email.split('@')[0]}
               </div>

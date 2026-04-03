@@ -3,7 +3,6 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import AnimatedBackground from '@/components/AnimatedBackground'
 import { supabase } from '@/lib/supabase'
 
 type Friend = {
@@ -12,6 +11,7 @@ type Friend = {
   pseudo?: string
   is_pro?: boolean
   last_seen?: string
+  avatar_url?: string
 }
 
 type SearchUser = {
@@ -19,6 +19,7 @@ type SearchUser = {
   pseudo?: string
   is_pro?: boolean
   last_seen?: string
+  avatar_url?: string
 }
 
 function getStatus(last_seen?: string): { label: string; color: string; dot: string } {
@@ -121,13 +122,8 @@ export default function AmisPage() {
   }
 
   return (
-    <div style={{
-      minHeight: '100vh',
-      background: 'linear-gradient(165deg,#0d0a1a 0%,#1a1130 40%,#120e20 100%)',
-      fontFamily: "'DM Sans', sans-serif", color: '#e2e8f0', padding: '24px 20px',
-    }}>
-      <AnimatedBackground />
-      <div style={{ position: 'relative', zIndex: 1, maxWidth: '480px', margin: '0 auto' }}>
+    <div style={{ minHeight: '100vh', fontFamily: "'DM Sans', sans-serif", color: '#e2e8f0', padding: '24px 20px' }}>
+      <div style={{ maxWidth: '480px', margin: '0 auto' }}>
 
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
@@ -177,8 +173,11 @@ export default function AmisPage() {
             const requested = requests.some(r => r.friendId === u.id)
             return (
               <div key={u.id} style={{ marginTop: '10px', display: 'flex', alignItems: 'center', gap: '10px', padding: '10px', borderRadius: '10px', background: 'rgba(168,85,247,.06)' }}>
-                <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'linear-gradient(135deg,rgba(168,85,247,.3),rgba(124,58,237,.2))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px', flexShrink: 0 }}>
-                  {u.pseudo?.[0]?.toUpperCase() ?? '?'}
+                <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'linear-gradient(135deg,rgba(168,85,247,.3),rgba(124,58,237,.2))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px', flexShrink: 0, overflow: 'hidden' }}>
+                  {u.avatar_url
+                    ? <img src={u.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    : (u.pseudo?.[0]?.toUpperCase() ?? '?')
+                  }
                 </div>
                 <div style={{ flex: 1 }}>
                   <div style={{ fontWeight: 700, fontSize: '14px', color: '#f1f5f9' }}>
@@ -216,8 +215,11 @@ export default function AmisPage() {
                 <span style={labelStyle}>Demandes reçues ({requests.length})</span>
                 {requests.map(r => (
                   <div key={r.friendshipId} style={card}>
-                    <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'linear-gradient(135deg,rgba(245,158,11,.3),rgba(217,119,6,.2))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', flexShrink: 0, border: '2px solid rgba(245,158,11,.4)' }}>
-                      {r.pseudo?.[0]?.toUpperCase() ?? '?'}
+                    <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'linear-gradient(135deg,rgba(245,158,11,.3),rgba(217,119,6,.2))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', flexShrink: 0, border: '2px solid rgba(245,158,11,.4)', overflow: 'hidden' }}>
+                      {r.avatar_url
+                        ? <img src={r.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        : (r.pseudo?.[0]?.toUpperCase() ?? '?')
+                      }
                     </div>
                     <div style={{ flex: 1 }}>
                       <div style={{ fontWeight: 700, fontSize: '14px', color: '#f1f5f9' }}>{r.pseudo ?? 'Anonyme'} {r.is_pro ? '🐺⭐' : ''}</div>
@@ -246,8 +248,11 @@ export default function AmisPage() {
                 return (
                   <div key={f.friendshipId} style={card}>
                     <div style={{ position: 'relative', flexShrink: 0 }}>
-                      <div style={{ width: '44px', height: '44px', borderRadius: '50%', background: f.is_pro ? 'linear-gradient(135deg,rgba(168,85,247,.3),rgba(124,58,237,.2))' : 'rgba(30,20,60,.8)', border: f.is_pro ? '2px solid rgba(168,85,247,.5)' : '2px solid rgba(100,116,139,.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px' }}>
-                        {f.pseudo?.[0]?.toUpperCase() ?? '?'}
+                      <div style={{ width: '44px', height: '44px', borderRadius: '50%', background: f.is_pro ? 'linear-gradient(135deg,rgba(168,85,247,.3),rgba(124,58,237,.2))' : 'rgba(30,20,60,.8)', border: f.is_pro ? '2px solid rgba(168,85,247,.5)' : '2px solid rgba(100,116,139,.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', overflow: 'hidden' }}>
+                        {f.avatar_url
+                          ? <img src={f.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          : (f.pseudo?.[0]?.toUpperCase() ?? '?')
+                        }
                       </div>
                       {/* Point de statut */}
                       <span style={{ position: 'absolute', bottom: '1px', right: '1px', width: '10px', height: '10px', borderRadius: '50%', background: st.dot, border: '2px solid #0d0a1a' }} />

@@ -24,7 +24,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ endDate: null })
     }
 
-    const subscription = await stripe.subscriptions.retrieve(profile.subscription_id)
+    const subscription = await stripe.subscriptions.retrieve(profile.subscription_id) as unknown as { current_period_end: number, cancel_at_period_end: boolean }
     const endDate = new Date(subscription.current_period_end * 1000).toLocaleDateString('fr-FR', {
       day: 'numeric', month: 'long', year: 'numeric',
     })
