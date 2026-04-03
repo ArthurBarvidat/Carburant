@@ -55,7 +55,7 @@ export default function LoginPage() {
   }
 
   const handleGoogle = async () => {
-    await supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin + '/' } })
+    await supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin + '/consent' } })
   }
 
   const handleApple = async () => {
