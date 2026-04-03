@@ -21,12 +21,17 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
+  const [rgpdConsent, setRgpdConsent] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
     if (password !== confirm) {
       setError('Les mots de passe ne correspondent pas.')
+      return
+    }
+    if (!rgpdConsent) {
+      setError('Tu dois accepter la politique de confidentialité pour créer un compte.')
       return
     }
     setLoading(true)
@@ -256,6 +261,24 @@ export default function RegisterPage() {
                     Les mots de passe ne correspondent pas
                   </p>
                 )}
+              </div>
+
+              {/* Consentement RGPD */}
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', padding: '12px', borderRadius: '10px', background: 'rgba(168,85,247,.04)', border: '1px solid rgba(168,85,247,.15)' }}>
+                <input
+                  type="checkbox"
+                  id="rgpd"
+                  checked={rgpdConsent}
+                  onChange={e => setRgpdConsent(e.target.checked)}
+                  style={{ marginTop: '2px', accentColor: '#a855f7', width: '16px', height: '16px', flexShrink: 0, cursor: 'pointer' }}
+                />
+                <label htmlFor="rgpd" style={{ fontSize: '12px', color: '#64748b', lineHeight: 1.6, cursor: 'pointer' }}>
+                  J'accepte la{' '}
+                  <Link href="/mentions-legales" style={{ color: '#a855f7', textDecoration: 'none', fontWeight: 600 }}>
+                    politique de confidentialité
+                  </Link>{' '}
+                  et le traitement de mes données conformément au RGPD.
+                </label>
               </div>
 
               {/* Erreur */}

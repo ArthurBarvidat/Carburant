@@ -109,6 +109,22 @@ export default function ProfilPage() {
     router.replace('/login')
   }
 
+  const handleDeleteAccount = async () => {
+    const confirmed = confirm('⚠️ Supprimer définitivement ton compte ?\n\nToutes tes données (favoris, alertes, historique) seront effacées. Cette action est irréversible.')
+    if (!confirmed) return
+    const confirmed2 = confirm('Dernière confirmation : supprimer mon compte WolfFuel définitivement ?')
+    if (!confirmed2) return
+    const res = await fetch('/api/delete-account', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId }),
+    })
+    if (res.ok) {
+      await supabase.auth.signOut()
+      router.replace('/')
+    }
+  }
+
   const s: React.CSSProperties = {
     minHeight: '100vh',
     fontFamily: "'DM Sans', sans-serif",
@@ -347,6 +363,25 @@ export default function ProfilPage() {
             >
               Se déconnecter
             </button>
+
+            {/* Suppression compte */}
+            <div style={{ marginTop: '24px', paddingTop: '16px', borderTop: '1px solid rgba(139,92,246,.1)' }}>
+              <p style={{ fontSize: '12px', color: '#334155', textAlign: 'center', marginBottom: '10px' }}>
+                Zone dangereuse · Conformité RGPD
+              </p>
+              <button
+                onClick={handleDeleteAccount}
+                style={{
+                  width: '100%', padding: '12px', borderRadius: '12px',
+                  border: '1px solid rgba(239,68,68,.2)',
+                  background: 'transparent',
+                  color: '#475569', fontSize: '13px', fontWeight: 600,
+                  cursor: 'pointer', fontFamily: "'DM Sans', sans-serif",
+                }}
+              >
+                🗑️ Supprimer mon compte et mes données
+              </button>
+            </div>
           </>
         )}
       </div>

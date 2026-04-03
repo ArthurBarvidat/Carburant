@@ -1,18 +1,14 @@
 'use client'
 
-import AnimatedBackground from '@/components/AnimatedBackground'
-
 export default function MentionsLegalesPage() {
   return (
     <div style={{
       minHeight: '100vh',
-      background: 'linear-gradient(165deg,#0d0a1a 0%,#1a1130 40%,#120e20 100%)',
       fontFamily: "'DM Sans', sans-serif",
       color: '#e2e8f0',
       padding: '24px 20px 48px',
     }}>
-      <AnimatedBackground />
-      <div style={{ position: 'relative', zIndex: 1, maxWidth: '680px', margin: '0 auto' }}>
+      <div style={{ maxWidth: '680px', margin: '0 auto' }}>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '28px' }}>
           <a href="/" style={{ color: '#64748b', textDecoration: 'none', fontSize: '20px' }}>←</a>
@@ -23,7 +19,7 @@ export default function MentionsLegalesPage() {
           }}>Mentions légales & RGPD</h1>
         </div>
 
-        <p style={{ fontSize: '13px', color: '#475569', marginBottom: '24px' }}>Dernière mise à jour : mars 2025</p>
+        <p style={{ fontSize: '13px', color: '#475569', marginBottom: '24px' }}>Dernière mise à jour : avril 2026</p>
 
         {[
           {
@@ -46,7 +42,7 @@ export default function MentionsLegalesPage() {
                     <li key={i} style={{ fontSize: '14px', color: '#94a3b8', lineHeight: 1.7, marginBottom: '4px' }}>{item}</li>
                   ))}
                 </ul>
-                <p style={{ fontSize: '14px', color: '#94a3b8', lineHeight: 1.7 }}>Aucune donnée sensible n&apos;est stockée par WolfFuel. Les paiements sont traités exclusivement par PayPal.</p>
+                <p style={{ fontSize: '14px', color: '#94a3b8', lineHeight: 1.7 }}>Aucune donnée sensible n&apos;est stockée par WolfFuel. Les paiements sont traités exclusivement par Stripe (aucune donnée bancaire stockée sur nos serveurs).</p>
               </>
             )
           },
@@ -68,7 +64,7 @@ export default function MentionsLegalesPage() {
             title: '5. Sous-traitants',
             content: (
               <ul style={{ paddingLeft: '20px', margin: '8px 0' }}>
-                {['Supabase (base de données & auth) — hébergé en Europe (Frankfurt)','Vercel (hébergement) — serveurs en Europe','PayPal (paiement) — traitement des abonnements Wolf Pro','data.gouv.fr (Open Data) — prix des carburants, données publiques françaises'].map((item, i) => (
+                {['Supabase (base de données & auth) — hébergé en Europe (Frankfurt)','Vercel (hébergement) — serveurs en Europe','Stripe (paiement) — traitement sécurisé des abonnements Wolf Pro','Resend (emails transactionnels) — envoi des confirmations et factures','data.gouv.fr (Open Data) — prix des carburants, données publiques françaises'].map((item, i) => (
                   <li key={i} style={{ fontSize: '14px', color: '#94a3b8', lineHeight: 1.7, marginBottom: '4px' }}>{item}</li>
                 ))}
               </ul>
@@ -84,6 +80,7 @@ export default function MentionsLegalesPage() {
                     <li key={i} style={{ fontSize: '14px', color: '#94a3b8', lineHeight: 1.7, marginBottom: '4px' }}>{item}</li>
                   ))}
                 </ul>
+                <p style={{ fontSize: '14px', color: '#94a3b8', lineHeight: 1.7, marginBottom: '8px' }}>Tu peux également supprimer ton compte et toutes tes données directement depuis ton <strong style={{ color: '#e2e8f0' }}>profil</strong> (bas de page).</p>
                 <p style={{ fontSize: '14px', color: '#94a3b8', lineHeight: 1.7, marginBottom: '8px' }}>Pour exercer ces droits : <span style={{ color: '#a855f7' }}>contact@wolffuel.fr</span></p>
                 <p style={{ fontSize: '14px', color: '#94a3b8', lineHeight: 1.7 }}>En cas de litige, vous pouvez saisir la <strong style={{ color: '#e2e8f0' }}>CNIL</strong> — <span style={{ color: '#a855f7' }}>www.cnil.fr</span></p>
               </>
@@ -99,7 +96,7 @@ export default function MentionsLegalesPage() {
           },
           {
             title: '9. Abonnement Wolf Pro',
-            content: <p style={{ fontSize: '14px', color: '#94a3b8', lineHeight: 1.7 }}>L&apos;abonnement Wolf Pro est proposé à 2,99€/mois via PayPal. Résiliable à tout moment depuis votre compte PayPal. Aucun remboursement pour les périodes déjà facturées.</p>
+            content: <p style={{ fontSize: '14px', color: '#94a3b8', lineHeight: 1.7 }}>L&apos;abonnement Wolf Pro est proposé à 2,99€/mois via Stripe. Résiliable à tout moment depuis ton espace abonnement. Aucun remboursement pour les périodes déjà facturées. Aucune donnée bancaire n&apos;est stockée par WolfFuel.</p>
           },
         ].map((s, i) => (
           <div key={i} style={{

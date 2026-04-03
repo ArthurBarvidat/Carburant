@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import './globals.css'
 import ProfileButton from '@/components/ProfileButton'
 import StarBackground from '@/components/StarBackground'
+import CookieBanner from '@/components/CookieBanner'
 
 export const metadata: Metadata = {
   title: 'WolfFuel — Prix Carburants France',
@@ -34,6 +35,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           {children}
         </div>
         <ProfileButton />
+        <CookieBanner />
       </body>
     </html>
   )
