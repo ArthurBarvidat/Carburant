@@ -14,6 +14,7 @@ function AbonnementContent() {
   const [success, setSuccess] = useState(false)
   const [cancelled, setCancelled] = useState(false)
   const [cancelling, setCancelling] = useState(false)
+  const [reactivating, setReactivating] = useState(false)
   const [subscribing, setSubscribing] = useState(false)
   const [error, setError] = useState('')
 
@@ -55,6 +56,28 @@ function AbonnementContent() {
     } catch {
       setError('Erreur réseau. Réessayez.')
       setSubscribing(false)
+    }
+  }
+
+  async function handleReactivate() {
+    setReactivating(true)
+    setError('')
+    try {
+      const res = await fetch('/api/reactivate-subscription', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId }),
+      })
+      const data = await res.json()
+      if (data.success) {
+        setCancelled(false)
+      } else {
+        setError(data.error ?? 'Erreur lors de la réactivation.')
+      }
+    } catch {
+      setError('Erreur réseau. Réessayez.')
+    } finally {
+      setReactivating(false)
     }
   }
 
@@ -190,13 +213,30 @@ function AbonnementContent() {
               <div style={{ marginTop: '20px' }}>
                 {isPro ? (
                   cancelled ? (
-                    <div style={{ padding: '16px', borderRadius: '12px', background: 'rgba(239,68,68,.08)', border: '1.5px solid rgba(239,68,68,.3)', textAlign: 'center' }}>
-                      <div style={{ fontSize: '24px', marginBottom: '8px' }}>✅</div>
-                      <div style={{ color: '#fca5a5', fontWeight: 700, fontSize: '14px', marginBottom: '6px' }}>Résiliation confirmée</div>
-                      <div style={{ color: '#94a3b8', fontSize: '12px', lineHeight: 1.5 }}>
-                        Ton accès Wolf Pro reste actif jusqu'à la fin de la période en cours.<br />
-                        <strong style={{ color: '#fca5a5' }}>Le prélèvement automatique sera bien arrêté le mois prochain.</strong>
+                    <div>
+                      <div style={{ padding: '16px', borderRadius: '12px', background: 'rgba(239,68,68,.08)', border: '1.5px solid rgba(239,68,68,.3)', textAlign: 'center', marginBottom: '12px' }}>
+                        <div style={{ fontSize: '24px', marginBottom: '8px' }}>⏳</div>
+                        <div style={{ color: '#fca5a5', fontWeight: 700, fontSize: '14px', marginBottom: '6px' }}>Résiliation programmée</div>
+                        <div style={{ color: '#94a3b8', fontSize: '12px', lineHeight: 1.5 }}>
+                          Ton accès Wolf Pro reste actif jusqu'à la fin de la période en cours.<br />
+                          <strong style={{ color: '#fca5a5' }}>Le prélèvement automatique sera bien arrêté le mois prochain.</strong>
+                        </div>
                       </div>
+                      <button
+                        onClick={handleReactivate}
+                        disabled={reactivating}
+                        style={{
+                          width: '100%', padding: '13px', borderRadius: '12px', border: 'none',
+                          background: reactivating ? 'rgba(168,85,247,.4)' : 'linear-gradient(135deg,#a855f7,#7c3aed)',
+                          color: '#fff', fontSize: '14px', fontWeight: 700,
+                          cursor: reactivating ? 'not-allowed' : 'pointer',
+                          fontFamily: "'DM Sans', sans-serif",
+                        }}>
+                        {reactivating ? 'Réactivation...' : '🐺 Annuler la résiliation'}
+                      </button>
+                      <p style={{ fontSize: '11px', color: '#475569', textAlign: 'center', marginTop: '8px' }}>
+                        Aucune facturation supplémentaire — ton abonnement en cours continue normalement.
+                      </p>
                     </div>
                   ) : (
                     <div>
