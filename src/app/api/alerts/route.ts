@@ -8,6 +8,11 @@ function getAdminClient() {
   )
 }
 
+async function checkIsPro(supabase: ReturnType<typeof getAdminClient>, userId: string) {
+  const { data } = await supabase.from('profiles').select('is_pro').eq('id', userId).single()
+  return data?.is_pro === true
+}
+
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url)
@@ -16,6 +21,9 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'userId requis' }, { status: 400 })
     }
     const supabase = getAdminClient()
+    if (!(await checkIsPro(supabase, userId))) {
+      return NextResponse.json({ error: 'Fonctionnalité réservée aux membres Wolf Pro.' }, { status: 403 })
+    }
     const { data, error } = await supabase
       .from('price_alerts')
       .select('*')
@@ -39,6 +47,9 @@ export async function POST(req: NextRequest) {
       )
     }
     const supabase = getAdminClient()
+    if (!(await checkIsPro(supabase, userId))) {
+      return NextResponse.json({ error: 'Fonctionnalité réservée aux membres Wolf Pro.' }, { status: 403 })
+    }
     const { data, error } = await supabase
       .from('price_alerts')
       .insert({
@@ -66,6 +77,9 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ error: 'userId et alertId requis' }, { status: 400 })
     }
     const supabase = getAdminClient()
+    if (!(await checkIsPro(supabase, userId))) {
+      return NextResponse.json({ error: 'Fonctionnalité réservée aux membres Wolf Pro.' }, { status: 403 })
+    }
     const { error } = await supabase
       .from('price_alerts')
       .delete()

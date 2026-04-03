@@ -8,6 +8,11 @@ function getAdminClient() {
   )
 }
 
+async function checkIsPro(supabase: ReturnType<typeof getAdminClient>, userId: string) {
+  const { data } = await supabase.from('profiles').select('is_pro').eq('id', userId).single()
+  return data?.is_pro === true
+}
+
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
@@ -18,8 +23,11 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       )
     }
-    const saved = (avgPrice - bestPrice) * liters
     const supabase = getAdminClient()
+    if (!(await checkIsPro(supabase, userId))) {
+      return NextResponse.json({ error: 'Fonctionnalité réservée aux membres Wolf Pro.' }, { status: 403 })
+    }
+    const saved = (avgPrice - bestPrice) * liters
     const { data, error } = await supabase
       .from('savings_history')
       .insert({
@@ -48,6 +56,9 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'userId requis' }, { status: 400 })
     }
     const supabase = getAdminClient()
+    if (!(await checkIsPro(supabase, userId))) {
+      return NextResponse.json({ error: 'Fonctionnalité réservée aux membres Wolf Pro.' }, { status: 403 })
+    }
 
     const now = new Date()
     const startOfThisMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString()

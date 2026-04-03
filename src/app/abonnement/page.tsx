@@ -16,6 +16,7 @@ function AbonnementContent() {
   const [cancelling, setCancelling] = useState(false)
   const [reactivating, setReactivating] = useState(false)
   const [subscribing, setSubscribing] = useState(false)
+  const [endDate, setEndDate] = useState('')
   const [error, setError] = useState('')
 
   useEffect(() => {
@@ -33,6 +34,11 @@ function AbonnementContent() {
           if (p?.is_pro) setIsPro(true)
           if (p?.subscription_id) setSubscriptionId(p.subscription_id)
           if (p?.subscription_status === 'cancelled') setCancelled(true)
+          if (p?.subscription_id) {
+            fetch(`/api/subscription-details?userId=${data.user.id}`)
+              .then(r => r.json())
+              .then(d => { if (d.endDate) setEndDate(d.endDate) })
+          }
         })
     })
   }, [router, searchParams])
@@ -219,6 +225,7 @@ function AbonnementContent() {
                         <div style={{ color: '#fca5a5', fontWeight: 700, fontSize: '14px', marginBottom: '6px' }}>Résiliation programmée</div>
                         <div style={{ color: '#94a3b8', fontSize: '12px', lineHeight: 1.5 }}>
                           Ton accès Wolf Pro reste actif jusqu'à la fin de la période en cours.<br />
+                          {endDate && <span>📅 Accès jusqu'au : <strong style={{ color: '#fca5a5' }}>{endDate}</strong><br /></span>}
                           <strong style={{ color: '#fca5a5' }}>Le prélèvement automatique sera bien arrêté le mois prochain.</strong>
                         </div>
                       </div>
@@ -245,6 +252,7 @@ function AbonnementContent() {
                       </div>
                       <div style={{ padding: '12px 14px', borderRadius: '12px', background: 'rgba(168,85,247,.05)', border: '1px solid rgba(168,85,247,.15)', fontSize: '12px', color: '#64748b', lineHeight: 1.6, marginBottom: '12px' }}>
                         💳 Abonnement actif · renouvelé automatiquement chaque mois<br />
+                        {endDate && <span>📅 Prochain renouvellement : <strong style={{ color: '#a855f7' }}>{endDate}</strong><br /></span>}
                         {subscriptionId && <span style={{ fontFamily: 'monospace', fontSize: '10px', color: '#475569' }}>Réf: {subscriptionId}</span>}
                       </div>
                       <button

@@ -55,6 +55,29 @@ export async function POST(req: NextRequest) {
       break
     }
 
+    case 'invoice.paid': {
+      const invoice = event.data.object as Stripe.Invoice & { subscription?: string, billing_reason?: string }
+      // Ne pas renvoyer la facture pour le premier paiement (déjà géré par checkout.session.completed)
+      if (invoice.billing_reason === 'subscription_cycle' && invoice.subscription) {
+        const { data: profile } = await supabaseAdmin
+          .from('profiles')
+          .select('id')
+          .eq('subscription_id', invoice.subscription)
+          .single()
+        if (profile?.id) {
+          const { data: { user } } = await supabaseAdmin.auth.admin.getUserById(profile.id)
+          if (user?.email) {
+            fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/send-invoice`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ email: user.email, subscriptionId: invoice.subscription }),
+            })
+          }
+        }
+      }
+      break
+    }
+
     case 'invoice.payment_failed': {
       const invoice = event.data.object as Stripe.Invoice & { subscription?: string }
       const subId = invoice.subscription as string
