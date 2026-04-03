@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
 
   switch (event.type) {
     case 'checkout.session.completed': {
-      const session = event.data.object as Stripe.CheckoutSession
+      const session = event.data.object as Stripe.Checkout.Session
       const userId = session.metadata?.userId
       const subscriptionId = session.subscription as string
 
@@ -56,7 +56,7 @@ export async function POST(req: NextRequest) {
     }
 
     case 'invoice.payment_failed': {
-      const invoice = event.data.object as Stripe.Invoice
+      const invoice = event.data.object as Stripe.Invoice & { subscription?: string }
       const subId = invoice.subscription as string
       if (subId) {
         await supabaseAdmin.from('profiles').update({
