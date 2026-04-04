@@ -4,6 +4,7 @@ import 'leaflet/dist/leaflet.css'
 import ProfileButton from '@/components/ProfileButton'
 import StarBackground from '@/components/StarBackground'
 import CookieBanner from '@/components/CookieBanner'
+import CapacitorHandler from '@/components/CapacitorHandler'
 
 export const metadata: Metadata = {
   title: 'WolfFuel — Prix Carburants France',
@@ -37,6 +38,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         </div>
         <ProfileButton />
         <CookieBanner />
+        <CapacitorHandler />
       </body>
     </html>
   )
