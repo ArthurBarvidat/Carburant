@@ -223,6 +223,7 @@ document.getElementById("gps-precise-btn-full").onclick=function(){
   navigator.geolocation.getCurrentPosition(onSuccess,onError,{enableHighAccuracy:true,timeout:15000,maximumAge:0});
 };
 function checkReady(){document.getElementById("go-btn").disabled=!(cLat&&cLon&&cFuel);}
+window.wolfSetLocation=function(lat,lon,name){cLat=lat;cLon=lon;cName=name;checkReady();};
 
 // FUEL GRID
 const fg=document.getElementById("fg");FK.forEach(k=>{const c=FC[k];const b=document.createElement("button");b.className="fb"+(k===cFuel?" selected":"");b.style.setProperty("--fc",c.c);b.innerHTML='<div class="fb-d" style="background:'+c.c+'"></div><div class="fb-n">'+c.l+'</div>';b.onclick=()=>{

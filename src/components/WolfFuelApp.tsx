@@ -312,6 +312,113 @@ async function injectMonthlySavings(userId: string) {
   } catch { /* silencieux */ }
 }
 
+// ── Recherche par ville sur screen-welcome ───────────────────────────────────
+function injectCitySearch() {
+  if (document.getElementById('wolf-city-btn')) return
+  const deptBtn = document.getElementById('btn-dept')
+  if (!deptBtn) return
+
+  // Bouton ville
+  const btn = document.createElement('button')
+  btn.id = 'wolf-city-btn'
+  btn.type = 'button'
+  btn.className = 'loc-btn'
+  btn.innerHTML = '<span class="bi">🏙️</span><span class="bt">Rechercher une ville<span class="bs">Tapez le nom de votre ville</span></span>'
+
+  // Conteneur input + suggestions
+  const wrap = document.createElement('div')
+  wrap.id = 'wolf-city-wrap'
+  wrap.style.cssText = 'display:none;margin-top:8px;position:relative'
+
+  const inp = document.createElement('input')
+  inp.type = 'text'
+  inp.placeholder = 'Ex: Lyon, Bordeaux, Strasbourg...'
+  inp.autocomplete = 'off'
+  inp.style.cssText = `width:100%;padding:11px 14px;border-radius:10px;border:1.5px solid ${PC.border};background:rgba(168,85,247,.06);color:#f1f5f9;font-size:14px;font-family:${PC.font};outline:none;box-sizing:border-box`
+
+  const sug = document.createElement('div')
+  sug.style.cssText = `position:absolute;top:calc(100% + 4px);left:0;right:0;background:rgba(10,6,30,.97);border:1.5px solid ${PC.border};border-radius:12px;z-index:9999;overflow:hidden;display:none`
+
+  const status = document.createElement('div')
+  status.id = 'wolf-city-status'
+  status.className = 'loc-status'
+
+  wrap.appendChild(inp)
+  wrap.appendChild(sug)
+
+  let debounce: ReturnType<typeof setTimeout> | null = null
+
+  inp.addEventListener('input', () => {
+    const v = inp.value.trim()
+    if (debounce) clearTimeout(debounce)
+    if (v.length < 2) { sug.style.display = 'none'; return }
+    debounce = setTimeout(async () => {
+      try {
+        const r = await fetch(`https://api-adresse.data.gouv.fr/search/?q=${encodeURIComponent(v)}&type=municipality&limit=6`)
+        const d = await r.json()
+        const results: { label: string; lat: number; lon: number }[] = (d.features ?? []).map((f: { properties: { label: string }; geometry: { coordinates: number[] } }) => ({
+          label: f.properties.label,
+          lat: f.geometry.coordinates[1],
+          lon: f.geometry.coordinates[0],
+        }))
+        if (!results.length) { sug.style.display = 'none'; return }
+        sug.innerHTML = results.map((r, i) =>
+          `<div data-i="${i}" style="padding:12px 16px;cursor:pointer;font-size:14px;color:#e2e8f0;border-bottom:1px solid rgba(168,85,247,.1);font-family:${PC.font}">📍 ${r.label}</div>`
+        ).join('')
+        sug.style.display = 'block'
+        sug.querySelectorAll('[data-i]').forEach(el => {
+          (el as HTMLElement).addEventListener('mouseenter', () => { (el as HTMLElement).style.background = 'rgba(168,85,247,.12)' })
+          ;(el as HTMLElement).addEventListener('mouseleave', () => { (el as HTMLElement).style.background = '' })
+          el.addEventListener('click', () => {
+            const i = parseInt((el as HTMLElement).dataset.i ?? '0')
+            const pick = results[i]
+            inp.value = pick.label
+            sug.style.display = 'none'
+            status.textContent = '✅ ' + pick.label
+            status.className = 'loc-status show'
+            // Désélectionner les autres boutons
+            document.getElementById('btn-geo')?.classList.remove('selected')
+            document.getElementById('btn-dept')?.classList.remove('selected')
+            btn.classList.add('selected')
+            document.getElementById('dw')?.classList.remove('show')
+            document.getElementById('dept-status')?.classList.remove('show')
+            document.getElementById('geo-status')?.classList.remove('show')
+            // Passer la localisation au script principal
+            const fn = (window as unknown as Record<string, (lat: number, lon: number, name: string) => void>).wolfSetLocation
+            if (fn) fn(pick.lat, pick.lon, pick.label)
+          })
+        })
+      } catch { sug.style.display = 'none' }
+    }, 280)
+  })
+
+  // Fermer suggestions au clic ailleurs
+  document.addEventListener('click', (e) => {
+    if (!wrap.contains(e.target as Node)) sug.style.display = 'none'
+  })
+
+  btn.addEventListener('click', () => {
+    const open = wrap.style.display === 'block'
+    // Fermer le dropdown département
+    document.getElementById('dw')?.classList.remove('show')
+    document.getElementById('btn-dept')?.classList.remove('selected')
+    document.getElementById('btn-geo')?.classList.remove('selected')
+    if (open) {
+      wrap.style.display = 'none'
+      btn.classList.remove('selected')
+    } else {
+      wrap.style.display = 'block'
+      btn.classList.add('selected')
+      inp.focus()
+    }
+  })
+
+  // Insérer après btn-dept
+  deptBtn.insertAdjacentElement('afterend', status)
+  deptBtn.insertAdjacentElement('afterend', wrap)
+  deptBtn.insertAdjacentElement('afterend', btn)
+}
+
 // ── Bouton Wolf Pro (non-pro) ────────────────────────────────────────────────
 function injectProButton() {
   if (document.getElementById('wolf-pro-btn')) return
@@ -378,6 +485,7 @@ export default function WolfFuelApp() {
       s1.defer = false
       document.body.appendChild(s1)
       s1.onload = () => {
+        injectCitySearch()
         injectProButton()
         setTimeout(runProCheck, 800)
       }

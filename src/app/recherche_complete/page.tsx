@@ -1,7 +1,11 @@
 'use client'
 import { useEffect, useState, useCallback, useRef, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
+import dynamic from 'next/dynamic'
 import WolfChat from '@/components/WolfChat'
+import type { MapFuelStation } from '@/components/StationMap'
+
+const StationMap = dynamic(() => import('@/components/StationMap'), { ssr: false })
 
 const FC: Record<string, { l: string; c: string; f: string; m: string }> = {
   Gazole: { l: 'Gazole',   c: '#ffc20e', f: 'gazole_prix', m: 'gazole_maj' },
@@ -149,6 +153,7 @@ function RechercheContent() {
   const [evStations, setEvStations] = useState<EVStation[]>([])
   const [status,     setStatus]     = useState<'idle' | 'loading' | 'error' | 'ok'>('idle')
   const [errorMsg,   setErrorMsg]   = useState('')
+  const [showMap,    setShowMap]    = useState(false)
   const [gpsStatus,  setGpsStatus]  = useState<'idle' | 'loading' | 'ok' | 'error'>('idle')
   const [gpsLat,     setGpsLat]     = useState<number | null>(null)
   const [gpsLon,     setGpsLon]     = useState<number | null>(null)
@@ -487,6 +492,18 @@ function RechercheContent() {
         </div>
       )}
 
+      {/* Bouton carte */}
+      {status === 'ok' && (
+        <div style={{ maxWidth: 750, margin: '10px auto 0', padding: '0 20px' }}>
+          <button
+            onClick={() => setShowMap(v => !v)}
+            style={{ width: '100%', padding: '12px', borderRadius: 12, border: showMap ? '1px solid rgba(168,85,247,.6)' : '1px solid rgba(168,85,247,.2)', background: showMap ? 'rgba(168,85,247,.18)' : 'rgba(168,85,247,.06)', color: '#c084fc', fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'DM Sans,sans-serif' }}
+          >
+            {showMap ? '📋 Voir la liste' : '🗺️ Voir sur la carte'}
+          </button>
+        </div>
+      )}
+
       {/* Bannière GPS */}
       <div style={{ maxWidth: 750, margin: '12px auto 0', padding: '0 20px' }}>
         {gpsStatus !== 'ok' && (
@@ -544,8 +561,32 @@ function RechercheContent() {
           </div>
         )}
 
-        {/* Cards carburant */}
-        {status === 'ok' && !isEV && sorted.length > 0 && (
+        {/* Cards carburant — vue carte */}
+        {status === 'ok' && !isEV && sorted.length > 0 && showMap && (() => {
+          const mapStations: MapFuelStation[] = sorted.map(s => {
+            const fuelsWithPrice = ALL_FUELS.filter(k => s.prices[k]?.price != null)
+            const bestFuelKey = fuelsWithPrice.length
+              ? fuelsWithPrice.reduce((a, b) => (s.prices[a]?.price ?? 999) < (s.prices[b]?.price ?? 999) ? a : b)
+              : null
+            return {
+              kind: 'fuel' as const, id: s.id, lat: s.lat, lon: s.lon,
+              city: s.city, addr: s.addr, cp: s.cp, dist: s.dist,
+              price: bestFuelKey ? s.prices[bestFuelKey].price : null,
+              updated: bestFuelKey ? s.prices[bestFuelKey].updated : null,
+              is24h: s.is24h, hasPenurie: false,
+              fuelLabel: bestFuelKey ? FC[bestFuelKey].l : 'Carburant',
+              fuelColor: bestFuelKey ? FC[bestFuelKey].c : '#a855f7',
+            }
+          })
+          return (
+            <div style={{ height: '70vh', minHeight: 380, maxWidth: 750, margin: '12px auto 0', padding: '0 20px' }}>
+              <StationMap stations={mapStations} userLat={dLat} userLon={dLon} />
+            </div>
+          )
+        })()}
+
+        {/* Cards carburant — vue liste */}
+        {status === 'ok' && !isEV && sorted.length > 0 && !showMap && (
           <div className="res-list">
             {sorted.map((s, i) => {
               const gU = `https://www.google.com/maps/dir/?api=1&destination=${s.lat},${s.lon}`
@@ -593,8 +634,23 @@ function RechercheContent() {
           </div>
         )}
 
-        {/* Cards EV */}
-        {status === 'ok' && isEV && evSorted.length > 0 && (
+        {/* Cards EV — vue carte */}
+        {status === 'ok' && isEV && evSorted.length > 0 && showMap && (() => {
+          const mapStations = evSorted.map(s => ({
+            kind: 'ev' as const, id: s.id, lat: s.lat, lon: s.lon,
+            name: s.name, city: s.city, addr: s.addr, dist: s.dist,
+            prises: s.prises, puissance: s.puissance, nbrePDC: s.nbrePDC,
+            is24h: s.is24h, operateur: s.operateur,
+          }))
+          return (
+            <div style={{ height: '70vh', minHeight: 380, maxWidth: 750, margin: '12px auto 0', padding: '0 20px' }}>
+              <StationMap stations={mapStations} userLat={dLat} userLon={dLon} />
+            </div>
+          )
+        })()}
+
+        {/* Cards EV — vue liste */}
+        {status === 'ok' && isEV && evSorted.length > 0 && !showMap && (
           <>
             <div className="res-count">
               {evSorted.length} borne{evSorted.length > 1 ? 's' : ''} · {totalPDC} point{totalPDC > 1 ? 's' : ''} de charge

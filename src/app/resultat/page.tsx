@@ -1,7 +1,11 @@
 'use client'
 import { useEffect, useState, useCallback, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
+import dynamic from 'next/dynamic'
 import WolfChat from '@/components/WolfChat'
+import type { MapFuelStation, MapEVStation } from '@/components/StationMap'
+
+const StationMap = dynamic(() => import('@/components/StationMap'), { ssr: false })
 
 // ── Config carburants ───────────────────────────────────────────────────────
 const FC: Record<string, { l: string; c: string; f: string; m: string }> = {
@@ -122,6 +126,7 @@ function ResultatContent() {
   const [evFilter,   setEvFilter]   = useState<'all' | 'rapide' | 'semi' | 'lente'>('all')
   const [status,     setStatus]     = useState<'loading' | 'error' | 'empty' | 'ok'>('loading')
   const [errorMsg,   setErrorMsg]   = useState('')
+  const [showMap,    setShowMap]    = useState(false)
 
   // ── Fetch carburant ───────────────────────────────────────────────────────
   const loadFuel = useCallback(async () => {
@@ -315,14 +320,22 @@ function ResultatContent() {
         </div>
       )}
 
-      {/* Bouton recherche complète */}
-      <div style={{ maxWidth: 750, margin: '12px auto 0', padding: '0 20px' }}>
+      {/* Boutons recherche complète + carte */}
+      <div style={{ maxWidth: 750, margin: '12px auto 0', padding: '0 20px', display: 'flex', gap: 8 }}>
         <button
           onClick={() => router.push(`/recherche_complete?lat=${lat}&lon=${lon}&name=${encodeURIComponent(name)}&fuel=${encodeURIComponent(fuel)}`)}
-          style={{ width: '100%', padding: '14px', borderRadius: 12, border: '1px solid rgba(168,85,247,.2)', background: 'rgba(168,85,247,.06)', color: '#c084fc', fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'DM Sans,sans-serif' }}
+          style={{ flex: 1, padding: '14px', borderRadius: 12, border: '1px solid rgba(168,85,247,.2)', background: 'rgba(168,85,247,.06)', color: '#c084fc', fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'DM Sans,sans-serif' }}
         >
-          🔄 Tous les carburants — toutes les villes
+          🔄 Tous les carburants
         </button>
+        {status === 'ok' && (
+          <button
+            onClick={() => setShowMap(v => !v)}
+            style={{ padding: '14px 18px', borderRadius: 12, border: showMap ? '1px solid rgba(168,85,247,.6)' : '1px solid rgba(168,85,247,.2)', background: showMap ? 'rgba(168,85,247,.18)' : 'rgba(168,85,247,.06)', color: '#c084fc', fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'DM Sans,sans-serif', whiteSpace: 'nowrap' }}
+          >
+            {showMap ? '📋 Liste' : '🗺️ Carte'}
+          </button>
+        )}
       </div>
 
       {/* Bannière GPS */}
@@ -380,8 +393,27 @@ function ResultatContent() {
           </div>
         )}
 
-        {/* Résultats carburant */}
-        {status === 'ok' && !isEV && (
+        {/* Résultats carburant — vue carte */}
+        {status === 'ok' && !isEV && showMap && (() => {
+          const mapStations: MapFuelStation[] = sorted.map(s => ({
+            kind: 'fuel' as const, id: s.id, lat: s.lat, lon: s.lon,
+            city: s.city, addr: s.addr, cp: s.cp, dist: s.dist,
+            price: s.price, updated: s.updated, is24h: s.is24h, hasPenurie: false,
+            fuelLabel: fc?.l ?? fuel, fuelColor: fc?.c ?? '#888',
+          }))
+          return (
+            <div style={{ height: '70vh', minHeight: 380, maxWidth: 750, margin: '12px auto 0', padding: '0 20px' }}>
+              <StationMap
+                stations={mapStations}
+                userLat={dLat} userLon={dLon}
+                bestId={best?.id}
+              />
+            </div>
+          )
+        })()}
+
+        {/* Résultats carburant — vue liste */}
+        {status === 'ok' && !isEV && !showMap && (
           <>
             <div className="res-count">
               {withPrice.length} station{withPrice.length > 1 ? 's' : ''} disponible{withPrice.length > 1 ? 's' : ''}
@@ -443,8 +475,23 @@ function ResultatContent() {
           </>
         )}
 
-        {/* Résultats EV */}
-        {status === 'ok' && isEV && (
+        {/* Résultats EV — vue carte */}
+        {status === 'ok' && isEV && showMap && (() => {
+          const mapStations: MapEVStation[] = evFiltered.map(s => ({
+            kind: 'ev' as const, id: s.id, lat: s.lat, lon: s.lon,
+            name: s.name, city: s.city, addr: s.addr, dist: s.dist,
+            prises: s.prises, puissance: s.puissance, nbrePDC: s.nbrePDC,
+            is24h: s.is24h, operateur: s.operateur,
+          }))
+          return (
+            <div style={{ height: '70vh', minHeight: 380, maxWidth: 750, margin: '12px auto 0', padding: '0 20px' }}>
+              <StationMap stations={mapStations} userLat={dLat} userLon={dLon} />
+            </div>
+          )
+        })()}
+
+        {/* Résultats EV — vue liste */}
+        {status === 'ok' && isEV && !showMap && (
           <>
             <div className="res-count">
               {evFiltered.length} borne{evFiltered.length > 1 ? 's' : ''} · {totalPDC} point{totalPDC > 1 ? 's' : ''} de charge
