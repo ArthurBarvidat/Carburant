@@ -419,6 +419,20 @@ function injectCitySearch() {
   deptBtn.insertAdjacentElement('afterend', btn)
 }
 
+// ── Bouton télécharger l'app Android ────────────────────────────────────────
+function injectDownloadAppButton() {
+  if (document.getElementById('wolf-apk-btn')) return
+  const tutoLink = document.querySelector('.tuto-link')
+  if (!tutoLink) return
+  const btn = document.createElement('a')
+  btn.id = 'wolf-apk-btn'
+  btn.href = '/wolffuel.apk'
+  btn.download = 'wolffuel.apk'
+  btn.innerHTML = '📱 Télécharger l\'app Android'
+  btn.style.cssText = `display:flex;align-items:center;justify-content:center;gap:8px;margin-top:10px;padding:12px 16px;border-radius:12px;border:1.5px solid rgba(16,185,129,.3);background:rgba(16,185,129,.08);color:#34d399;font-size:14px;font-weight:700;text-decoration:none;font-family:${PC.font}`
+  tutoLink.insertAdjacentElement('afterend', btn)
+}
+
 // ── Bouton Wolf Pro (non-pro) ────────────────────────────────────────────────
 function injectProButton() {
   if (document.getElementById('wolf-pro-btn')) return
@@ -486,6 +500,7 @@ export default function WolfFuelApp() {
       document.body.appendChild(s1)
       s1.onload = () => {
         injectCitySearch()
+        injectDownloadAppButton()
         injectProButton()
         setTimeout(runProCheck, 800)
       }
