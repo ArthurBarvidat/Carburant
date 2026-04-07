@@ -2,7 +2,6 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 
 type Friend = {
@@ -98,7 +97,7 @@ export default function AmisPage() {
     setTimeout(() => setMsg(''), 3000)
   }
 
-  const acceptRequest = async (friendshipId: string, friendId: string) => {
+  const acceptRequest = async (_friendshipId: string, friendId: string) => {
     await fetch('/api/friends', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -126,13 +125,19 @@ export default function AmisPage() {
       <div style={{ maxWidth: '480px', margin: '0 auto' }}>
 
         {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
           <a href="/" style={{ color: '#64748b', textDecoration: 'none', fontSize: '20px' }}>←</a>
           <h1 style={{
             fontSize: '20px', fontWeight: 800,
             background: 'linear-gradient(135deg,#c084fc,#a855f7)',
             WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text',
           }}>Mes amis</h1>
+          <a href="/classement" style={{
+            marginLeft: 'auto', padding: '8px 14px', borderRadius: '10px',
+            background: 'linear-gradient(135deg,rgba(245,158,11,.15),rgba(217,119,6,.1))',
+            border: '1.5px solid rgba(245,158,11,.35)', color: '#fbbf24',
+            fontSize: '13px', fontWeight: 700, textDecoration: 'none', whiteSpace: 'nowrap',
+          }}>🏆 Classement</a>
         </div>
 
         {/* Recherche */}
@@ -266,9 +271,17 @@ export default function AmisPage() {
                         {f.is_pro ? 'Wolf Pro' : 'Gratuit'}
                       </div>
                     </div>
-                    <button onClick={() => removeFriend(f.friendshipId)} style={{ padding: '7px 10px', borderRadius: '8px', border: '1px solid rgba(239,68,68,.3)', background: 'rgba(239,68,68,.06)', color: '#f87171', fontSize: '12px', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}>
-                      Retirer
-                    </button>
+                    <div style={{ display: 'flex', gap: '6px' }}>
+                      <a href={`/chat/${f.friendId}`} style={{
+                        padding: '7px 12px', borderRadius: '8px', border: 'none',
+                        background: 'linear-gradient(135deg,#a855f7,#7c3aed)',
+                        color: '#fff', fontWeight: 700, fontSize: '12px', cursor: 'pointer',
+                        textDecoration: 'none', display: 'flex', alignItems: 'center',
+                      }}>💬</a>
+                      <button onClick={() => removeFriend(f.friendshipId)} style={{ padding: '7px 10px', borderRadius: '8px', border: '1px solid rgba(239,68,68,.3)', background: 'rgba(239,68,68,.06)', color: '#f87171', fontSize: '12px', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}>
+                        Retirer
+                      </button>
+                    </div>
                   </div>
                 )
               })

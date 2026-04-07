@@ -127,6 +127,10 @@ function ResultatContent() {
   const [status,     setStatus]     = useState<'loading' | 'error' | 'empty' | 'ok'>('loading')
   const [errorMsg,   setErrorMsg]   = useState('')
   const [showMap,    setShowMap]    = useState(false)
+  const [reportingId, setReportingId] = useState<string | null>(null)
+  const [reportPrice, setReportPrice] = useState('')
+  const [reportMsg,   setReportMsg]   = useState('')
+  const [currentUserId, setCurrentUserId] = useState('')
 
   // ── Fetch carburant ───────────────────────────────────────────────────────
   const loadFuel = useCallback(async () => {
@@ -247,7 +251,33 @@ function ResultatContent() {
     if (!lat || !lon) { router.push('/'); return }
     if (isEV) loadEV()
     else loadFuel()
+    // Récupérer l'userId pour les signalements
+    import('@/lib/supabase').then(({ supabase }) => {
+      supabase.auth.getUser().then(({ data }) => {
+        if (data.user) setCurrentUserId(data.user.id)
+      })
+    })
   }, [lat, lon, isEV, loadFuel, loadEV, router])
+
+  const submitReport = async (s: Station, reportedPrice: number) => {
+    if (!currentUserId) return
+    const res = await fetch('/api/community-reports', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        userId: currentUserId,
+        stationId: s.id,
+        stationName: s.city,
+        fuelType: fuel,
+        reportedPrice,
+        officialPrice: s.price,
+      }),
+    })
+    const data = await res.json()
+    if (data.error) { setReportMsg('⚠️ ' + data.error) }
+    else { setReportMsg('✅ Signalement envoyé, merci !') }
+    setTimeout(() => { setReportingId(null); setReportMsg(''); setReportPrice('') }, 2500)
+  }
 
   // ── GPS précis ────────────────────────────────────────────────────────────
   const [gpsLat, setGpsLat] = useState<number | null>(null)
@@ -445,7 +475,37 @@ function ResultatContent() {
                     <div className="nav-btns">
                       <a className="nav-btn nav-btn-gmaps" href={gU} target="_blank" rel="noopener noreferrer" dangerouslySetInnerHTML={{ __html: gS + ' Google Maps' }} />
                       <a className="nav-btn nav-btn-waze"  href={wU} target="_blank" rel="noopener noreferrer" dangerouslySetInnerHTML={{ __html: wS + ' Waze' }} />
+                      {currentUserId && (
+                        <button
+                          onClick={() => { setReportingId(reportingId === s.id ? null : s.id); setReportPrice(''); setReportMsg('') }}
+                          style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid rgba(245,158,11,.3)', background: 'rgba(245,158,11,.06)', color: '#f59e0b', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'DM Sans,sans-serif' }}
+                        >
+                          ⚠️ Signaler
+                        </button>
+                      )}
                     </div>
+                    {reportingId === s.id && (
+                      <div style={{ marginTop: 10, padding: '12px', borderRadius: 10, background: 'rgba(245,158,11,.06)', border: '1px solid rgba(245,158,11,.2)' }}>
+                        <div style={{ fontSize: 12, fontWeight: 700, color: '#f59e0b', marginBottom: 6 }}>
+                          Signaler un prix incorrect pour {fc?.l}
+                        </div>
+                        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                          <input
+                            type="number" placeholder="Prix réel (ex: 1.782)" step="0.001"
+                            value={reportPrice} onChange={e => setReportPrice(e.target.value)}
+                            style={{ flex: 1, padding: '9px 12px', borderRadius: 8, border: '1px solid rgba(245,158,11,.3)', background: 'rgba(245,158,11,.05)', color: '#f1f5f9', fontSize: 13, outline: 'none', fontFamily: 'DM Sans,sans-serif' }}
+                          />
+                          <button
+                            onClick={() => reportPrice && submitReport(s, parseFloat(reportPrice))}
+                            disabled={!reportPrice}
+                            style={{ padding: '9px 14px', borderRadius: 8, border: 'none', background: 'linear-gradient(135deg,#f59e0b,#d97706)', color: '#fff', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'DM Sans,sans-serif', whiteSpace: 'nowrap' }}
+                          >
+                            Envoyer
+                          </button>
+                        </div>
+                        {reportMsg && <div style={{ fontSize: 12, marginTop: 6, fontWeight: 700, color: reportMsg.startsWith('✅') ? '#34d399' : '#f87171' }}>{reportMsg}</div>}
+                      </div>
+                    )}
                   </div>
                 )
               })}

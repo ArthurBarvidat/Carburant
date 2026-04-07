@@ -320,16 +320,28 @@ export default function ProfilPage() {
               </div>
             </div>
 
-            {/* Amis */}
-            <Link href="/amis" style={{
-              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              padding: '16px 20px', borderRadius: '14px', textDecoration: 'none',
-              background: 'rgba(15,10,40,.85)', border: '1.5px solid rgba(139,92,246,.25)',
-              marginBottom: '12px',
-            }}>
-              <span style={{ fontSize: '15px', fontWeight: 700, color: '#f1f5f9' }}>👥 Mes amis</span>
-              <span style={{ color: '#64748b', fontSize: '18px' }}>→</span>
-            </Link>
+            {/* Liens vers les fonctionnalités */}
+            {[
+              { href: '/amis', icon: '👥', label: 'Mes amis', sub: 'Ajouter et gérer tes amis' },
+              { href: '/vehicule', icon: '🚗', label: 'Mon véhicule', sub: 'Profil, pleins & entretien' },
+              { href: '/trajet', icon: '🗺️', label: 'Estimateur de trajet', sub: 'Calcule le coût d\'un trajet' },
+              { href: '/badges', icon: '🏅', label: 'Mes badges', sub: 'Récompenses & succès' },
+              { href: '/classement', icon: '🏆', label: 'Classement amis', sub: 'Qui économise le plus ?' },
+            ].map(l => (
+              <Link key={l.href} href={l.href} style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                padding: '14px 20px', borderRadius: '14px', textDecoration: 'none',
+                background: 'rgba(15,10,40,.85)', border: '1.5px solid rgba(139,92,246,.25)',
+                marginBottom: '8px', gap: '12px',
+              }}>
+                <span style={{ fontSize: '20px' }}>{l.icon}</span>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: '14px', fontWeight: 700, color: '#f1f5f9' }}>{l.label}</div>
+                  <div style={{ fontSize: '12px', color: '#64748b', marginTop: '1px' }}>{l.sub}</div>
+                </div>
+                <span style={{ color: '#64748b', fontSize: '18px' }}>→</span>
+              </Link>
+            ))}
 
             {/* Fonctionnalités Pro */}
             <div style={card}>
