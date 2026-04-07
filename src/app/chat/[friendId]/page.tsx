@@ -63,19 +63,32 @@ export default function ChatPage() {
       await loadMessages(uid)
       setLoading(false)
 
-      // Realtime subscription
+      // Realtime — écoute tous les INSERT sur messages, filtre côté client
       const channel = supabase
         .channel(`chat:${[uid, friendId].sort().join('-')}`)
         .on('postgres_changes', {
           event: 'INSERT',
           schema: 'public',
           table: 'messages',
-          filter: `receiver_id=eq.${uid}`,
         }, (payload) => {
           const msg = payload.new as Message
-          if (msg.sender_id === friendId) {
-            setMessages(prev => [...prev, msg])
-          }
+          const isConversation =
+            (msg.sender_id === uid && msg.receiver_id === friendId) ||
+            (msg.sender_id === friendId && msg.receiver_id === uid)
+          if (!isConversation) return
+
+          setMessages(prev => {
+            // Remplacer le message optimiste si c'est le nôtre
+            const tempIdx = prev.findIndex(m => m.id.startsWith('temp-') && m.sender_id === uid && m.content === msg.content)
+            if (tempIdx !== -1) {
+              const next = [...prev]
+              next[tempIdx] = msg
+              return next
+            }
+            // Éviter les doublons
+            if (prev.some(m => m.id === msg.id)) return prev
+            return [...prev, msg]
+          })
         })
         .subscribe()
 

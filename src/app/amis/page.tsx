@@ -64,16 +64,37 @@ export default function AmisPage() {
   }, [])
 
   useEffect(() => {
+    let uid = ''
     supabase.auth.getUser().then(({ data }) => {
       if (!data.user) { router.replace('/login'); return }
-      setUserId(data.user.id)
-      // Mettre à jour la présence
+      uid = data.user.id
+      setUserId(uid)
+
       fetch('/api/presence', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: data.user.id }),
+        body: JSON.stringify({ userId: uid }),
       })
-      loadFriends(data.user.id).then(() => setLoading(false))
+      loadFriends(uid).then(() => setLoading(false))
+
+      // Realtime — nouvelles demandes d'amis et acceptations
+      const channel = supabase
+        .channel(`friends:${uid}`)
+        .on('postgres_changes', {
+          event: '*',
+          schema: 'public',
+          table: 'friends',
+        }, (payload) => {
+          const row = payload.new as { user_id?: string; friend_id?: string } | null
+          if (!row) return
+          // Ne concerne cet utilisateur que si c'est lui l'envoyeur ou le destinataire
+          if (row.user_id === uid || row.friend_id === uid) {
+            loadFriends(uid)
+          }
+        })
+        .subscribe()
+
+      return () => { supabase.removeChannel(channel) }
     })
   }, [router, loadFriends])
 
