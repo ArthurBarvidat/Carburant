@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import WolfFuelApp from '@/components/WolfFuelApp'
+import LoadingScreen from '@/components/LoadingScreen'
 import { supabase } from '@/lib/supabase'
 
 export default function Home() {
@@ -23,7 +24,7 @@ export default function Home() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  if (!ready) return null
+  if (!ready) return <LoadingScreen message="WolfFuel démarre…" />
 
   return <WolfFuelApp />
 }

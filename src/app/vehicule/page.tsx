@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
+import { SkeletonCard, SkeletonStat } from '@/components/LoadingScreen'
 
 type Vehicle = {
   marque?: string; modele?: string; annee?: number; carburant?: string
@@ -225,7 +226,12 @@ export default function VehiculePage() {
         </div>
 
         {loading ? (
-          <div style={{ textAlign: 'center', color: '#64748b', padding: '40px' }}>Chargement…</div>
+          <>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '12px' }}>
+              {[1,2,3,4].map(i => <SkeletonStat key={i} />)}
+            </div>
+            <SkeletonCard /><SkeletonCard /><SkeletonCard lines={1} />
+          </>
         ) : (
           <>
             {/* ── TAB VEHICLE ─────────────────────────────────────────── */}

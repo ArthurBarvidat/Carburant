@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
+import { SkeletonCard } from '@/components/LoadingScreen'
 
 type Badge = {
   id: string; name: string; description: string; icon: string
@@ -93,7 +94,7 @@ export default function BadgesPage() {
         )}
 
         {loading ? (
-          <div style={{ textAlign: 'center', color: '#64748b', padding: '40px' }}>Chargement…</div>
+          <>{[1,2,3,4,5].map(i => <SkeletonCard key={i} />)}</>
         ) : (
           <>
             {/* Badges gagnés */}

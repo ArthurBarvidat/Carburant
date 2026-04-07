@@ -1,4 +1,7 @@
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+/* Transition fluide entre pages */
+@keyframes wf-pagein{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+main,#__next>div>*{animation:wf-pagein .18s ease-out both}
 html{overflow-x:hidden;overscroll-behavior-x:none;background:#0d0a1a}
 body{font-family:'DM Sans',sans-serif;min-height:100vh;background:linear-gradient(165deg,#0d0a1a 0%,#1a1130 40%,#120e20 100%);background-attachment:fixed;color:#e2e8f0;overflow-x:hidden;overscroll-behavior-x:none;touch-action:pan-y}
 .grain{position:fixed;inset:0;opacity:.03;pointer-events:none;z-index:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
+import { SkeletonCard } from '@/components/LoadingScreen'
 
 type LeaderboardEntry = {
   id: string; pseudo: string; avatar_url: string | null; is_pro: boolean
@@ -89,7 +90,7 @@ export default function ClassementPage() {
         )}
 
         {loading ? (
-          <div style={{ textAlign: 'center', color: '#64748b', padding: '40px' }}>Chargement…</div>
+          <>{[1,2,3,4].map(i => <SkeletonCard key={i} />)}</>
         ) : sorted.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '40px', color: '#475569' }}>
             <div style={{ fontSize: '40px', marginBottom: '12px' }}>👥</div>

@@ -34,6 +34,7 @@ export default function ChatPage() {
   const [loading, setLoading] = useState(true)
   const bottomRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
+  const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null)
 
   const scrollToBottom = useCallback(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -78,6 +79,7 @@ export default function ChatPage() {
         })
         .subscribe()
 
+      channelRef.current = channel
       return () => { supabase.removeChannel(channel) }
     })
   }, [router, friendId, loadMessages])

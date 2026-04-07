@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
+import { SkeletonCard } from '@/components/LoadingScreen'
 
 type Friend = {
   friendshipId: string
@@ -211,7 +212,7 @@ export default function AmisPage() {
         </div>
 
         {loading ? (
-          <div style={{ textAlign: 'center', color: '#64748b', padding: '30px' }}>Chargement...</div>
+          <>{[1,2,3].map(i => <SkeletonCard key={i} />)}</>
         ) : (
           <>
             {/* Demandes reçues */}

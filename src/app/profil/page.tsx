@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
+import { SkeletonCard, SkeletonStat } from '@/components/LoadingScreen'
 
 type Profile = {
   pseudo?: string
@@ -164,7 +165,12 @@ export default function ProfilPage() {
         </div>
 
         {loading ? (
-          <div style={{ textAlign: 'center', color: '#64748b', padding: '40px' }}>Chargement...</div>
+          <>
+            <SkeletonStat />
+            <SkeletonCard />
+            <SkeletonCard />
+            <SkeletonCard lines={1} />
+          </>
         ) : (
           <>
             {/* Avatar + statut */}
