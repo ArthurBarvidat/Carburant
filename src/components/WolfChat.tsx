@@ -1,5 +1,6 @@
 'use client'
 import { useState, useRef, useEffect } from 'react'
+import { supabase } from '@/lib/supabase'
 
 type Topic = 'fuel' | 'ev' | null
 interface Msg { role: 'user' | 'assistant'; text: string }
@@ -29,8 +30,21 @@ export default function WolfChat() {
   const [msgs,    setMsgs]    = useState<Msg[]>([])
   const [input,   setInput]   = useState('')
   const [loading, setLoading] = useState(false)
+  const [pseudo,  setPseudo]  = useState<string | null>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
   const inputRef  = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    supabase.auth.getUser().then(async ({ data }) => {
+      if (!data.user) return
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('pseudo')
+        .eq('id', data.user.id)
+        .single()
+      if (profile?.pseudo) setPseudo(profile.pseudo)
+    })
+  }, [])
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -38,9 +52,10 @@ export default function WolfChat() {
 
   function chooseTopic(t: Topic) {
     setTopic(t)
+    const name = pseudo ? ` ${pseudo}` : ''
     const greeting = t === 'fuel'
-      ? '⛽ Salut ! Je suis WolfBot, propulsé par l\'IA Groq. Pose-moi ta question sur les carburants !'
-      : '⚡ Salut ! Je suis WolfBot, propulsé par l\'IA Groq. Pose-moi ta question sur les bornes de recharge !'
+      ? `⛽ Salut${name} ! Je suis WolfBot, propulsé par l'IA Groq. Pose-moi ta question sur les carburants !`
+      : `⚡ Salut${name} ! Je suis WolfBot, propulsé par l'IA Groq. Pose-moi ta question sur les bornes de recharge !`
     setMsgs([{ role: 'assistant', text: greeting }])
     setTimeout(() => inputRef.current?.focus(), 100)
   }
@@ -67,6 +82,7 @@ export default function WolfChat() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           topic,
+          pseudo,
           messages: history.map(m => ({ role: m.role, content: m.text })),
         }),
       })

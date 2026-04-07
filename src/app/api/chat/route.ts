@@ -100,7 +100,7 @@ const tools: any[] = [
 ]
 
 export async function POST(req: NextRequest) {
-  const { messages, topic } = await req.json()
+  const { messages, topic, pseudo } = await req.json()
 
   if (!process.env.GROQ_API_KEY) {
     return NextResponse.json({ error: 'Groq non configuré' }, { status: 503 })
@@ -112,7 +112,9 @@ export async function POST(req: NextRequest) {
   try {
     const groq = new Groq({ apiKey: process.env.GROQ_API_KEY })
 
-    const systemMsg = SYSTEM_PROMPT + (topic === 'ev'
+    const userContext = pseudo ? `\n\nL'utilisateur s'appelle "${pseudo}". Utilise son prénom/pseudo pour personnaliser tes réponses.` : ''
+
+    const systemMsg = SYSTEM_PROMPT + userContext + (topic === 'ev'
       ? '\n\nL\'utilisateur est sur la section "Bornes de recharge électrique". Pour les bornes EV, tu ne peux pas chercher les prix mais tu peux répondre sur les connecteurs, temps de charge, compatibilité.'
       : '\n\nL\'utilisateur est sur la section "Prix carburants". Utilise search_fuel_prices quand il demande des prix réels.')
 
