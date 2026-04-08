@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import WolfFuelApp from '@/components/WolfFuelApp'
 import LoadingScreen from '@/components/LoadingScreen'
+import WolfChat from '@/components/WolfChat'
 import { supabase } from '@/lib/supabase'
 
 export default function Home() {
@@ -26,5 +27,10 @@ export default function Home() {
 
   if (!ready) return <LoadingScreen message="WolfFuel démarre…" />
 
-  return <WolfFuelApp />
+  return (
+    <>
+      <WolfFuelApp />
+      <WolfChat />
+    </>
+  )
 }
