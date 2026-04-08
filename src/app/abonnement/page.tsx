@@ -18,15 +18,29 @@ function AbonnementContent() {
   const [subscribing, setSubscribing] = useState(false)
   const [endDate, setEndDate] = useState('')
   const [error, setError] = useState('')
+  const [countdown, setCountdown] = useState(5)
+
+  // Compte à rebours auto-redirect sur la page de succès
+  useEffect(() => {
+    if (!success) return
+    if (countdown <= 0) { router.replace('/'); return }
+    const t = setTimeout(() => setCountdown(c => c - 1), 1000)
+    return () => clearTimeout(t)
+  }, [success, countdown, router])
 
   useEffect(() => {
     // Vérifier si retour depuis Stripe
-    if (searchParams.get('success') === 'true') {
+    const isSuccess = searchParams.get('success') === 'true'
+    if (isSuccess) {
       setSuccess(true)
     }
 
     supabase.auth.getUser().then(({ data }) => {
-      if (!data.user) { router.replace('/login'); return }
+      // Ne pas rediriger vers /login si on revient d'un paiement Stripe réussi
+      if (!data.user) {
+        if (!isSuccess) router.replace('/login')
+        return
+      }
       setUserId(data.user.id)
       setUserEmail(data.user.email ?? '')
       supabase.from('profiles').select('is_pro,subscription_id,subscription_status').eq('id', data.user.id).single()
@@ -135,7 +149,7 @@ function AbonnementContent() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', fontFamily: "'DM Sans', sans-serif", color: '#e2e8f0', padding: '40px 20px' }}>
+    <div style={{ minHeight: '100vh', fontFamily: "'DM Sans', sans-serif", color: '#e2e8f0', padding: '40px 20px', background: 'linear-gradient(165deg,#0d0a1a 0%,#1a1130 40%,#120e20 100%)' }}>
       <div style={{ position: 'relative', zIndex: 1, maxWidth: '800px', margin: '0 auto' }}>
 
         {/* Header */}
@@ -183,7 +197,7 @@ function AbonnementContent() {
               color: '#fff', fontWeight: 800, fontSize: '16px', cursor: 'pointer',
               fontFamily: "'DM Sans', sans-serif",
             }}>
-              🐺 Commencer la chasse
+              🐺 Commencer la chasse {countdown > 0 && `(${countdown})`}
             </button>
           </div>
         ) : (
