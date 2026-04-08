@@ -104,11 +104,11 @@ function injectFavoriteButtons(userId: string) {
   }
 
   observeList('res-list')
-  observeList('res-list-full')
+  observeList('full-list')
 
   // Observer aussi les changements d'écran pour ré-injecter
   const screenObs = new MutationObserver(() => {
-    ['res-list', 'res-list-full'].forEach(id => {
+    ['res-list', 'full-list'].forEach(id => {
       document.getElementById(id)?.querySelectorAll('.card').forEach(c => addFavBtnToCard(c, userId, savedFavs))
     })
   })
@@ -296,6 +296,165 @@ function injectFavoritesPanel(userId: string) {
   anchor.insertAdjacentElement('afterend', btn)
 }
 
+// ── Panel Historique des pleins ──────────────────────────────────────────────
+function injectHistoryPanel(userId: string) {
+  if (document.getElementById('wolf-history-btn')) return
+  const anchor = document.getElementById('wolf-favs-btn') ?? document.getElementById('wolf-pro-btn')
+  if (!anchor) return
+
+  const btn = document.createElement('button')
+  btn.id = 'wolf-history-btn'
+  btn.textContent = '📊 Mon historique'
+  btn.style.cssText = `display:flex;align-items:center;justify-content:center;gap:8px;margin-top:8px;padding:12px 16px;border-radius:12px;border:1.5px solid ${PC.border};background:rgba(168,85,247,.1);color:${PC.text};font-size:14px;font-weight:700;cursor:pointer;width:100%;font-family:${PC.font}`
+
+  const overlay = document.createElement('div')
+  overlay.id = 'wolf-history-overlay'
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:9999;display:none;align-items:flex-end;justify-content:center'
+  overlay.innerHTML = `
+    <div style="background:rgba(10,6,30,.98);border:1.5px solid rgba(168,85,247,.4);border-radius:20px 20px 0 0;width:100%;max-width:480px;padding:24px;max-height:88vh;overflow-y:auto">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+        <span style="color:#c084fc;font-weight:800;font-size:16px">📊 Mon historique</span>
+        <button id="wolf-history-close" style="background:none;border:none;color:#64748b;cursor:pointer;font-size:20px">✕</button>
+      </div>
+      <div id="wolf-history-content"><p style="color:#64748b;text-align:center">Chargement...</p></div>
+      <div style="margin-top:16px;border-top:1px solid rgba(168,85,247,.15);padding-top:16px">
+        <div style="color:#c084fc;font-weight:700;font-size:14px;margin-bottom:12px">➕ Ajouter un plein</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+          <div>
+            <label style="font-size:11px;color:#64748b;font-weight:600;display:block;margin-bottom:4px">Carburant</label>
+            <select id="wh-fuel" style="width:100%;padding:8px 10px;border-radius:9px;border:1px solid rgba(168,85,247,.4);background:rgba(168,85,247,.06);color:#f1f5f9;font-size:13px;font-family:'DM Sans',sans-serif">
+              <option>Gazole</option><option>SP95</option><option>SP98</option><option>E10</option><option>E85</option><option>GPLc</option>
+            </select>
+          </div>
+          <div>
+            <label style="font-size:11px;color:#64748b;font-weight:600;display:block;margin-bottom:4px">Prix/L (€)</label>
+            <input id="wh-price" type="number" step="0.001" min="0.5" max="4" placeholder="1.789" style="width:100%;padding:8px 10px;border-radius:9px;border:1px solid rgba(168,85,247,.4);background:rgba(168,85,247,.06);color:#f1f5f9;font-size:13px;font-family:'DM Sans',sans-serif;box-sizing:border-box"/>
+          </div>
+          <div>
+            <label style="font-size:11px;color:#64748b;font-weight:600;display:block;margin-bottom:4px">Litres</label>
+            <input id="wh-liters" type="number" step="0.1" min="1" max="200" placeholder="45" style="width:100%;padding:8px 10px;border-radius:9px;border:1px solid rgba(168,85,247,.4);background:rgba(168,85,247,.06);color:#f1f5f9;font-size:13px;font-family:'DM Sans',sans-serif;box-sizing:border-box"/>
+          </div>
+          <div>
+            <label style="font-size:11px;color:#64748b;font-weight:600;display:block;margin-bottom:4px">Km compteur (optionnel)</label>
+            <input id="wh-km" type="number" step="1" min="0" placeholder="48500" style="width:100%;padding:8px 10px;border-radius:9px;border:1px solid rgba(168,85,247,.4);background:rgba(168,85,247,.06);color:#f1f5f9;font-size:13px;font-family:'DM Sans',sans-serif;box-sizing:border-box"/>
+          </div>
+        </div>
+        <input id="wh-station" type="text" placeholder="Nom de la station (optionnel)" style="width:100%;padding:8px 10px;border-radius:9px;border:1px solid rgba(168,85,247,.4);background:rgba(168,85,247,.06);color:#f1f5f9;font-size:13px;font-family:'DM Sans',sans-serif;box-sizing:border-box;margin-bottom:8px"/>
+        <button id="wh-submit" style="width:100%;padding:11px;border-radius:10px;border:none;background:linear-gradient(135deg,#a855f7,#7c3aed);color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif">Enregistrer le plein</button>
+        <div id="wh-msg" style="margin-top:8px;font-size:12px;text-align:center;display:none"></div>
+      </div>
+    </div>
+  `
+
+  type FillUp = { id: string; station_name?: string; fuel_type: string; price_per_liter: number; liters: number; total_cost: number; km_before?: number; created_at: string }
+  type Stats = { total_cost: number; total_liters: number; avg_price: number; count: number }
+
+  const renderHistory = (fillUps: FillUp[], stats: Stats) => {
+    const contentEl = overlay.querySelector('#wolf-history-content') as HTMLElement
+    if (!fillUps.length) {
+      contentEl.innerHTML = '<p style="color:#64748b;text-align:center;padding:16px">Aucun plein enregistré.<br>Utilise le formulaire ci-dessous !</p>'
+      return
+    }
+
+    // Stats cards
+    const statsHtml = `<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px">${[
+      ['⛽ Pleins', String(stats.count)],
+      ['💧 Volume', stats.total_liters.toFixed(0) + ' L'],
+      ['💶 Total dépensé', stats.total_cost.toFixed(2).replace('.', ',') + ' €'],
+      ['📈 Prix moyen', stats.avg_price.toFixed(3).replace('.', ',') + ' €/L'],
+    ].map(([label, val]) => `<div style="padding:10px;border-radius:10px;background:rgba(168,85,247,.08);border:1px solid rgba(168,85,247,.2)"><div style="font-size:11px;color:#64748b;margin-bottom:3px">${label}</div><div style="font-size:16px;font-weight:800;color:#e2e8f0">${val}</div></div>`).join('')}</div>`
+
+    // SVG bar chart (prix/L des 12 derniers pleins, du plus ancien au plus récent)
+    const chartData = [...fillUps].reverse().slice(0, 12)
+    const prices = chartData.map(f => f.price_per_liter)
+    const minP = Math.min(...prices)
+    const maxP = Math.max(...prices)
+    const pRange = maxP - minP || 0.1
+    const W = 280, H = 72, padX = 32
+    const barW = (W - padX * 2) / Math.max(chartData.length, 1)
+    const barsHtml = chartData.map((f, i) => {
+      const norm = (f.price_per_liter - minP) / pRange
+      const barH = Math.max(6, norm * (H - 18) + 6)
+      const x = padX + i * barW + barW * 0.1
+      const y = H - barH
+      const color = norm < 0.33 ? '#34d399' : norm < 0.66 ? '#fbbf24' : '#f87171'
+      const dateStr = new Date(f.created_at).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' })
+      return `<g><rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${(barW * 0.8).toFixed(1)}" height="${barH.toFixed(1)}" rx="3" fill="${color}" opacity="0.85"/><text x="${(x + barW * 0.4).toFixed(1)}" y="${(H + 11).toFixed(1)}" text-anchor="middle" font-size="7" fill="#475569">${dateStr}</text></g>`
+    }).join('')
+    const chartHtml = `<div style="margin-bottom:14px"><div style="font-size:11px;color:#64748b;font-weight:600;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Évolution prix/L <span style="color:#475569;font-weight:400">(vert = pas cher, rouge = cher)</span></div><div style="background:rgba(168,85,247,.05);border:1px solid rgba(168,85,247,.15);border-radius:12px;padding:12px 8px 6px"><svg viewBox="0 0 ${W} ${H + 14}" style="width:100%;height:86px;overflow:visible"><text x="0" y="8" font-size="8" fill="#475569">${maxP.toFixed(3)}</text><text x="0" y="${H - 1}" font-size="8" fill="#475569">${minP.toFixed(3)}</text><line x1="${padX}" y1="0" x2="${padX}" y2="${H}" stroke="rgba(168,85,247,.2)" stroke-width="1"/><line x1="${padX}" y1="${H}" x2="${W - padX}" y2="${H}" stroke="rgba(168,85,247,.2)" stroke-width="1"/>${barsHtml}</svg></div></div>`
+
+    // Table
+    const tableHtml = `<div style="font-size:11px;color:#64748b;font-weight:600;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Détail des pleins</div><div id="wolf-history-table" style="display:flex;flex-direction:column;gap:6px">${fillUps.slice(0, 20).map(f => {
+      const d = new Date(f.created_at).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: '2-digit' })
+      const consoPer100 = f.km_before ? null : null
+      void consoPer100
+      return `<div data-fill-id="${f.id}" style="display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;background:rgba(30,20,60,.7);border:1px solid rgba(168,85,247,.15)"><div style="font-size:11px;color:#64748b;white-space:nowrap">${d}</div><div><div style="font-size:13px;font-weight:600;color:#e2e8f0">${f.fuel_type} · ${f.price_per_liter.toFixed(3).replace('.', ',')}€/L</div><div style="font-size:11px;color:#64748b">${f.liters.toFixed(1)}L · ${f.total_cost.toFixed(2).replace('.', ',')}€${f.station_name ? ' · ' + f.station_name : ''}</div></div><button class="wh-del" data-id="${f.id}" style="background:none;border:none;color:#475569;cursor:pointer;font-size:14px;padding:4px" title="Supprimer">🗑️</button></div>`
+    }).join('')}</div>`
+
+    contentEl.innerHTML = statsHtml + chartHtml + tableHtml
+
+    contentEl.querySelectorAll('.wh-del').forEach(delBtn => {
+      delBtn.addEventListener('click', async () => {
+        const id = (delBtn as HTMLElement).dataset.id
+        await fetch('/api/fill-ups', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, userId }) }).catch(() => {})
+        ;(delBtn as HTMLElement).closest('[data-fill-id]')?.remove()
+      })
+    })
+  }
+
+  const loadHistory = async () => {
+    overlay.style.display = 'flex'
+    const contentEl = overlay.querySelector('#wolf-history-content') as HTMLElement
+    contentEl.innerHTML = '<p style="color:#64748b;text-align:center">Chargement...</p>'
+    try {
+      const res = await fetch(`/api/fill-ups?userId=${userId}`)
+      const { fill_ups, stats } = await res.json()
+      renderHistory(fill_ups ?? [], stats ?? { total_cost: 0, total_liters: 0, avg_price: 0, count: 0 })
+    } catch {
+      contentEl.innerHTML = '<p style="color:#f87171;text-align:center">Erreur de chargement.</p>'
+    }
+  }
+
+  btn.addEventListener('click', loadHistory)
+  overlay.querySelector('#wolf-history-close')?.addEventListener('click', () => { overlay.style.display = 'none' })
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.style.display = 'none' })
+
+  overlay.querySelector('#wh-submit')?.addEventListener('click', async () => {
+    const fuel = (overlay.querySelector('#wh-fuel') as HTMLSelectElement)?.value
+    const price = parseFloat((overlay.querySelector('#wh-price') as HTMLInputElement)?.value)
+    const liters = parseFloat((overlay.querySelector('#wh-liters') as HTMLInputElement)?.value)
+    const km = parseFloat((overlay.querySelector('#wh-km') as HTMLInputElement)?.value)
+    const station = (overlay.querySelector('#wh-station') as HTMLInputElement)?.value.trim()
+    const msgEl = overlay.querySelector('#wh-msg') as HTMLElement
+    if (!price || isNaN(price) || !liters || isNaN(liters)) {
+      msgEl.textContent = '⚠️ Prix/L et litres sont obligatoires'
+      msgEl.style.cssText = 'margin-top:8px;font-size:12px;text-align:center;display:block;color:#f87171'
+      return
+    }
+    try {
+      const res = await fetch('/api/fill-ups', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, fuel_type: fuel, price_per_liter: price, liters, km_before: isNaN(km) ? null : km, station_name: station || null }),
+      })
+      if (!res.ok) throw new Error()
+      msgEl.textContent = '✅ Plein enregistré !'
+      msgEl.style.cssText = 'margin-top:8px;font-size:12px;text-align:center;display:block;color:#34d399'
+      ;(overlay.querySelector('#wh-price') as HTMLInputElement).value = ''
+      ;(overlay.querySelector('#wh-liters') as HTMLInputElement).value = ''
+      ;(overlay.querySelector('#wh-km') as HTMLInputElement).value = ''
+      ;(overlay.querySelector('#wh-station') as HTMLInputElement).value = ''
+      setTimeout(() => { msgEl.style.display = 'none'; loadHistory() }, 1200)
+    } catch {
+      msgEl.textContent = '❌ Erreur lors de l\'enregistrement'
+      msgEl.style.cssText = 'margin-top:8px;font-size:12px;text-align:center;display:block;color:#f87171'
+    }
+  })
+
+  document.body.appendChild(overlay)
+  anchor.insertAdjacentElement('afterend', btn)
+}
+
 // ── Badge économies du mois ──────────────────────────────────────────────────
 async function injectMonthlySavings(userId: string) {
   if (document.getElementById('wolf-monthly-savings')) return
@@ -466,6 +625,7 @@ async function initProFeatures(userId: string) {
       ;(proBtn as HTMLElement).style.cssText = `display:flex;align-items:center;justify-content:center;gap:8px;margin-top:10px;padding:12px 16px;border-radius:12px;border:1.5px solid rgba(16,185,129,.5);background:linear-gradient(135deg,rgba(16,185,129,.15),rgba(5,150,105,.08));color:#34d399;font-size:14px;font-weight:700;text-decoration:none;font-family:${PC.font};cursor:default;pointer-events:none`
       injectProBadge()
       injectFavoritesPanel(userId)
+      injectHistoryPanel(userId)
       injectMonthlySavings(userId)
     } else {
       setTimeout(wait, 150)
@@ -476,11 +636,34 @@ async function initProFeatures(userId: string) {
   // Ré-injecter badge et favoris à chaque changement d'écran
   new MutationObserver(() => {
     injectProBadge()
-    ;['res-list', 'res-list-full'].forEach(id => {
+    ;['res-list', 'full-list'].forEach(id => {
       const favs = new Set<string>(JSON.parse(localStorage.getItem('wolf_favorites') ?? '[]'))
       document.getElementById(id)?.querySelectorAll('.card').forEach(c => addFavBtnToCard(c, userId, favs))
     })
   }).observe(document.body, { childList: true, subtree: false })
+}
+
+// ── Suppression des fonctionnalités Pro ──────────────────────────────────────
+function removeProFeatures() {
+  // Restaurer le bouton Pro
+  const proBtn = document.getElementById('wolf-pro-btn') as HTMLAnchorElement | null
+  if (proBtn) {
+    proBtn.textContent = '⭐ Passer Wolf Pro — 2,99€/mois'
+    proBtn.href = '/abonnement'
+    proBtn.style.cssText = `display:flex;align-items:center;justify-content:center;gap:8px;margin-top:10px;padding:12px 16px;border-radius:12px;border:1.5px solid ${PC.border};background:linear-gradient(135deg,rgba(168,85,247,.12),rgba(124,58,237,.08));color:${PC.text};font-size:14px;font-weight:700;text-decoration:none;font-family:${PC.font}`
+  }
+  document.getElementById('wolf-favs-btn')?.remove()
+  document.getElementById('wolf-favs-overlay')?.remove()
+  document.getElementById('wolf-history-btn')?.remove()
+  document.getElementById('wolf-history-overlay')?.remove()
+  document.getElementById('wolf-alert-fab')?.remove()
+  document.getElementById('wolf-alert-panel')?.remove()
+  document.getElementById('wolf-savings-banner')?.remove()
+  document.getElementById('wolf-monthly-savings')?.remove()
+  document.getElementById('wolf-pro-badge')?.remove()
+  document.getElementById('no-ads-style')?.remove()
+  // Supprimer les boutons favoris des cartes
+  document.querySelectorAll('.wolf-fav-btn').forEach(el => el.remove())
 }
 
 // Variable module-level — persiste entre navigations Next.js
@@ -488,26 +671,47 @@ let _scriptsLoaded = false
 
 async function runProCheck() {
   try {
-    // Lire la session locale (instantané, pas de réseau)
     const { data: sessionData } = await supabase.auth.getSession()
     const user = sessionData.session?.user
     if (!user) return
 
-    // Vérifier le cache local d'abord pour un affichage immédiat
     const cacheKey = `wolf_pro_${user.id}`
+
+    // Affichage immédiat depuis le cache
     if (localStorage.getItem(cacheKey) === '1') {
       await initProFeatures(user.id)
     }
 
-    // Vérifier en base et mettre à jour le cache
+    // Lire le profil en base (is_pro + subscription_id)
     const { data: profile } = await supabase
-      .from('profiles').select('is_pro').eq('id', user.id).single()
+      .from('profiles').select('is_pro, subscription_id').eq('id', user.id).single()
+
     if (profile?.is_pro) {
+      // Pro confirmé en base
       localStorage.setItem(cacheKey, '1')
       await initProFeatures(user.id)
-    } else {
-      localStorage.removeItem(cacheKey)
+      return
     }
+
+    // Pas Pro selon Supabase — si un subscription_id existe, syncer avec Stripe
+    // (le webhook a pu mettre is_pro=false par erreur, ou après un test d'annulation)
+    if (profile?.subscription_id) {
+      try {
+        await fetch(`/api/subscription-details?userId=${user.id}`)
+        // Après sync, relire le profil
+        const { data: refreshed } = await supabase
+          .from('profiles').select('is_pro').eq('id', user.id).single()
+        if (refreshed?.is_pro) {
+          localStorage.setItem(cacheKey, '1')
+          await initProFeatures(user.id)
+          return
+        }
+      } catch { /* silencieux */ }
+    }
+
+    // Définitivement pas Pro
+    localStorage.removeItem(cacheKey)
+    removeProFeatures()
   } catch { /* silencieux */ }
 }
 
