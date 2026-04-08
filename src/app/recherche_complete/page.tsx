@@ -4,6 +4,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import dynamic from 'next/dynamic'
 import WolfChat from '@/components/WolfChat'
 import type { MapFuelStation } from '@/components/StationMap'
+import { supabase } from '@/lib/supabase'
 
 const StationMap = dynamic(() => import('@/components/StationMap'), { ssr: false })
 
@@ -159,8 +160,58 @@ function RechercheContent() {
   const [gpsLon,     setGpsLon]     = useState<number | null>(null)
   const [suggestions, setSuggestions] = useState<{ label: string; lat: number; lon: number }[]>([])
   const debRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const [userId,     setUserId]     = useState('')
+  const [isPro,      setIsPro]      = useState(false)
+  const [favorites,  setFavorites]  = useState<Set<string>>(new Set())
+  const [reportingId, setReportingId] = useState<string | null>(null)
+  const [reportPrice, setReportPrice] = useState('')
+  const [reportMsg,   setReportMsg]   = useState('')
 
   const isEV = fuel === 'EV'
+
+  // ── Auth + Pro + Favoris ──────────────────────────────────────────────────
+  useEffect(() => {
+    supabase.auth.getSession().then(async ({ data }) => {
+      const user = data.session?.user
+      if (!user) return
+      setUserId(user.id)
+      const cached = localStorage.getItem(`wolf_pro_${user.id}`) === '1'
+      if (cached) setIsPro(true)
+      const { data: profile } = await supabase.from('profiles').select('is_pro').eq('id', user.id).single()
+      if (profile?.is_pro) { setIsPro(true); localStorage.setItem(`wolf_pro_${user.id}`, '1') }
+      const saved: string[] = JSON.parse(localStorage.getItem('wolf_favorites') ?? '[]')
+      setFavorites(new Set(saved))
+    })
+  }, [])
+
+  async function toggleFavorite(stationId: string, stationName: string, stationAddr: string, price: number | null) {
+    if (!userId || !isPro) return
+    const isSaved = favorites.has(stationId)
+    const next = new Set(favorites)
+    if (isSaved) {
+      await fetch('/api/favorites', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId, stationId }) }).catch(() => {})
+      next.delete(stationId)
+    } else {
+      await fetch('/api/favorites', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId, stationId, stationName, stationAddress: stationAddr, lastPrice: price }) }).catch(() => {})
+      next.add(stationId)
+    }
+    setFavorites(next)
+    localStorage.setItem('wolf_favorites', JSON.stringify([...next]))
+  }
+
+  async function submitReport(stationId: string, stationName: string, fuelType: string, officialPrice: number | null) {
+    const price = parseFloat(reportPrice)
+    if (!price || isNaN(price)) { setReportMsg('⚠️ Entre un prix valide'); return }
+    const res = await fetch('/api/community-reports', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId, stationId, stationName, fuelType, reportedPrice: price, officialPrice }) }).catch(() => null)
+    if (!res || !res.ok) { const d = await res?.json().catch(() => ({})); setReportMsg(d?.error ?? '❌ Erreur'); return }
+    setReportMsg('✅ Signalement envoyé, merci !')
+    setReportPrice('')
+    setTimeout(() => { setReportingId(null); setReportMsg('') }, 2000)
+  }
+
+  function stationKey(name: string, addr: string) {
+    return btoa(unescape(encodeURIComponent((name + addr).slice(0, 60)))).slice(0, 40)
+  }
 
   // ── Geocoding autocomplete ────────────────────────────────────────────────
   function onCityChange(val: string) {
@@ -627,7 +678,37 @@ function RechercheContent() {
                   <div className="nav-btns">
                     <a className="nav-btn nav-btn-gmaps" href={gU} target="_blank" rel="noopener noreferrer" dangerouslySetInnerHTML={{ __html: gS + ' Google Maps' }} />
                     <a className="nav-btn nav-btn-waze"  href={wU} target="_blank" rel="noopener noreferrer" dangerouslySetInnerHTML={{ __html: wS + ' Waze' }} />
+                    {userId && (
+                      <button onClick={() => { setReportingId(reportingId === s.id ? null : s.id); setReportPrice(''); setReportMsg('') }}
+                        style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid rgba(245,158,11,.3)', background: 'rgba(245,158,11,.06)', color: '#f59e0b', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'DM Sans,sans-serif' }}>
+                        ⚠️ Signaler
+                      </button>
+                    )}
+                    {isPro && userId && (() => {
+                      const sid = stationKey(s.name, s.addr + s.cp + s.city)
+                      const isSaved = favorites.has(sid)
+                      return (
+                        <button onClick={() => toggleFavorite(sid, s.name, [s.addr, s.cp, s.city].filter(Boolean).join(', '), bestFuel ? s.prices[bestFuel]?.price ?? null : null)}
+                          style={{ padding: '8px 12px', borderRadius: 8, border: `1px solid rgba(168,85,247,.3)`, background: 'rgba(168,85,247,.06)', color: '#c084fc', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'DM Sans,sans-serif' }}>
+                          {isSaved ? '❤️ Favori' : '🤍 Favori'}
+                        </button>
+                      )
+                    })()}
                   </div>
+                  {reportingId === s.id && (
+                    <div style={{ marginTop: 10, padding: '12px', borderRadius: 10, background: 'rgba(245,158,11,.06)', border: '1px solid rgba(245,158,11,.2)' }}>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: '#f59e0b', marginBottom: 6 }}>Signaler un prix incorrect</div>
+                      <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                        <input type="number" placeholder="Prix réel (ex: 1.782)" step="0.001" value={reportPrice} onChange={e => setReportPrice(e.target.value)}
+                          style={{ flex: 1, padding: '9px 12px', borderRadius: 8, border: '1px solid rgba(245,158,11,.3)', background: 'rgba(245,158,11,.05)', color: '#f1f5f9', fontSize: 13, outline: 'none', fontFamily: 'DM Sans,sans-serif' }} />
+                        <button onClick={() => submitReport(s.id, s.name, fuel, bestFuel ? s.prices[bestFuel]?.price ?? null : null)}
+                          style={{ padding: '9px 14px', borderRadius: 8, border: 'none', background: 'linear-gradient(135deg,#f59e0b,#d97706)', color: '#fff', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'DM Sans,sans-serif', whiteSpace: 'nowrap' }}>
+                          Envoyer
+                        </button>
+                      </div>
+                      {reportMsg && <div style={{ fontSize: 12, marginTop: 6, fontWeight: 700, color: reportMsg.startsWith('✅') ? '#34d399' : '#f87171' }}>{reportMsg}</div>}
+                    </div>
+                  )}
                 </div>
               )
             })}
