@@ -356,14 +356,18 @@ function injectCitySearch() {
       try {
         const r = await fetch(`https://api-adresse.data.gouv.fr/search/?q=${encodeURIComponent(v)}&type=municipality&limit=6`)
         const d = await r.json()
-        const results: { label: string; lat: number; lon: number }[] = (d.features ?? []).map((f: { properties: { label: string }; geometry: { coordinates: number[] } }) => ({
+        const results: { label: string; context: string; lat: number; lon: number }[] = (d.features ?? []).map((f: { properties: { label: string; context?: string }; geometry: { coordinates: number[] } }) => ({
           label: f.properties.label,
+          context: f.properties.context?.split(',').slice(0, 2).join(' ·').trim() ?? '',
           lat: f.geometry.coordinates[1],
           lon: f.geometry.coordinates[0],
         }))
         if (!results.length) { sug.style.display = 'none'; return }
         sug.innerHTML = results.map((r, i) =>
-          `<div data-i="${i}" style="padding:12px 16px;cursor:pointer;font-size:14px;color:#e2e8f0;border-bottom:1px solid rgba(168,85,247,.1);font-family:${PC.font}">📍 ${r.label}</div>`
+          `<div data-i="${i}" style="padding:10px 16px;cursor:pointer;border-bottom:1px solid rgba(168,85,247,.1);font-family:${PC.font}">
+            <div style="font-size:14px;color:#e2e8f0">📍 ${r.label}</div>
+            ${r.context ? `<div style="font-size:11px;color:#64748b;margin-top:2px">${r.context}</div>` : ''}
+          </div>`
         ).join('')
         sug.style.display = 'block'
         sug.querySelectorAll('[data-i]').forEach(el => {
