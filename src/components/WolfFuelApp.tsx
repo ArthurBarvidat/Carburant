@@ -90,35 +90,23 @@ function addFavBtnToCard(card: Element, userId: string, savedFavs: Set<string>) 
 
 function injectFavoriteButtons(userId: string) {
   const savedFavs = new Set<string>(JSON.parse(localStorage.getItem('wolf_favorites') ?? '[]'))
-  const w = window as unknown as Record<string, unknown>
 
-  const scanAll = () => {
-    ['res-list', 'full-list'].forEach(id => {
-      document.getElementById(id)?.querySelectorAll('.card').forEach(c => addFavBtnToCard(c, userId, savedFavs))
-    })
+  const scanList = (listId: string) => {
+    document.getElementById(listId)?.querySelectorAll('.card').forEach(c => addFavBtnToCard(c, userId, savedFavs))
   }
 
   // Scanner les cartes déjà présentes
-  scanAll()
+  scanList('res-list')
+  scanList('full-list')
 
-  // Patcher renderResults et renderFull (fonctions globales de main-script.js)
-  // — appelées à chaque mise à jour de la liste → injection garantie
-  const origRenderResults = w.renderResults as ((...args: unknown[]) => void) | undefined
-  if (origRenderResults) {
-    w.renderResults = (...args: unknown[]) => { origRenderResults(...args); setTimeout(scanAll, 0) }
+  // Observer chaque liste directement — innerHTML= déclenche childList sur l'élément lui-même
+  const observeList = (listId: string) => {
+    const el = document.getElementById(listId)
+    if (!el) return
+    new MutationObserver(() => scanList(listId)).observe(el, { childList: true })
   }
-  const origRenderFull = w.renderFull as ((...args: unknown[]) => void) | undefined
-  if (origRenderFull) {
-    w.renderFull = (...args: unknown[]) => { origRenderFull(...args); setTimeout(scanAll, 0) }
-  }
-  const origRenderEVResults = w.renderEVResults as ((...args: unknown[]) => void) | undefined
-  if (origRenderEVResults) {
-    w.renderEVResults = (...args: unknown[]) => { origRenderEVResults(...args); setTimeout(scanAll, 0) }
-  }
-  const origRenderFullEV = w.renderFullEV as ((...args: unknown[]) => void) | undefined
-  if (origRenderFullEV) {
-    w.renderFullEV = (...args: unknown[]) => { origRenderFullEV(...args); setTimeout(scanAll, 0) }
-  }
+  observeList('res-list')
+  observeList('full-list')
 }
 
 // ── Bannière économies dans les résultats ────────────────────────────────────
