@@ -142,7 +142,30 @@ const DEPTS=[
 
 const FC={Gazole:{l:"Gazole",c:"#ffc20e",f:"gazole_prix",m:"gazole_maj"},SP95:{l:"SP95",c:"#009d3e",f:"sp95_prix",m:"sp95_maj"},SP98:{l:"SP98",c:"#d61e3e",f:"sp98_prix",m:"sp98_maj"},E10:{l:"SP95-E10",c:"#009d3e",f:"e10_prix",m:"e10_maj"},E85:{l:"E85",c:"#e6a800",f:"e85_prix",m:"e85_maj"},GPLc:{l:"GPLc",c:"#00a3e0",f:"gplc_prix",m:"gplc_maj"}};FC["EV"]={l:"⚡ Électrique",c:"#06b6d4",isEV:true};
 const FK=Object.keys(FC);
-const BR=[{k:["leclerc","e.leclerc"],n:"E.Leclerc",bg:"#1e3a8a",fg:"#93c5fd",i:"🛒"},{k:["carrefour market","carrefour contact","carrefour express","carrefour"],n:"Carrefour",bg:"#1e40af",fg:"#93c5fd",i:"🛒"},{k:["intermarche","intermarch","intermarché"],n:"Intermarché",bg:"#9f1239",fg:"#fda4af",i:"🛒"},{k:["super u","systeme u","système u","hyper u","u express"],n:"Système U",bg:"#b91c1c",fg:"#fecaca",i:"🛒"},{k:["auchan"],n:"Auchan",bg:"#166534",fg:"#86efac",i:"🛒"},{k:["geant casino","géant casino","geant"],n:"Géant Casino",bg:"#166534",fg:"#86efac",i:"🛒"},{k:["casino"],n:"Casino",bg:"#166534",fg:"#86efac",i:"🛒"},{k:["cora"],n:"Cora",bg:"#9a3412",fg:"#fed7aa",i:"🛒"},{k:["lidl"],n:"Lidl",bg:"#1e40af",fg:"#93c5fd",i:"🛒"},{k:["netto"],n:"Netto",bg:"#854d0e",fg:"#fde68a",i:"🛒"},{k:["aldi"],n:"Aldi",bg:"#1e40af",fg:"#93c5fd",i:"🛒"},{k:["totalenergies","total access","relais total","relais des"],n:"TotalEnergies",bg:"#991b1b",fg:"#fecaca",i:"🔴"},{k:["total "],n:"Total",bg:"#991b1b",fg:"#fecaca",i:"🔴"},{k:["esso"],n:"Esso",bg:"#1e3a8a",fg:"#93c5fd",i:"🔵"},{k:["bp ","bp-"],n:"BP",bg:"#166534",fg:"#86efac",i:"🟢"},{k:["shell"],n:"Shell",bg:"#854d0e",fg:"#fde68a",i:"🟡"},{k:["avia"],n:"Avia",bg:"#1e3a8a",fg:"#bfdbfe",i:"🔷"},{k:["dyneff"],n:"Dyneff",bg:"#9a3412",fg:"#fed7aa",i:"🟠"},{k:["vito"],n:"Vito",bg:"#166534",fg:"#86efac",i:"🟢"},{k:["agip","eni "],n:"Agip/Eni",bg:"#854d0e",fg:"#fde68a",i:"🟡"},{k:["elan"],n:"Elan",bg:"#4c1d95",fg:"#c4b5fd",i:"🟣"}];
+const GL="https://www.google.com/s2/favicons?sz=32&domain=";
+const BR=[
+  {k:["leclerc","e.leclerc"],n:"E.Leclerc",bg:"#1e3a8a",fg:"#93c5fd",i:"🛒",logo:GL+"e.leclerc"},
+  {k:["carrefour market","carrefour contact","carrefour express","carrefour"],n:"Carrefour",bg:"#1e40af",fg:"#93c5fd",i:"🛒",logo:GL+"carrefour.fr"},
+  {k:["intermarche","intermarch","intermarché"],n:"Intermarché",bg:"#9f1239",fg:"#fda4af",i:"🛒",logo:GL+"intermarche.com"},
+  {k:["super u","systeme u","système u","hyper u","u express"],n:"Système U",bg:"#b91c1c",fg:"#fecaca",i:"🛒",logo:GL+"magasins-u.com"},
+  {k:["auchan"],n:"Auchan",bg:"#166534",fg:"#86efac",i:"🛒",logo:GL+"auchan.fr"},
+  {k:["geant casino","géant casino","geant"],n:"Géant Casino",bg:"#166534",fg:"#86efac",i:"🛒",logo:GL+"casino.fr"},
+  {k:["casino"],n:"Casino",bg:"#166534",fg:"#86efac",i:"🛒",logo:GL+"casino.fr"},
+  {k:["cora"],n:"Cora",bg:"#9a3412",fg:"#fed7aa",i:"🛒",logo:GL+"cora.fr"},
+  {k:["lidl"],n:"Lidl",bg:"#1e40af",fg:"#93c5fd",i:"🛒",logo:GL+"lidl.fr"},
+  {k:["netto"],n:"Netto",bg:"#854d0e",fg:"#fde68a",i:"🛒",logo:GL+"netto.fr"},
+  {k:["aldi"],n:"Aldi",bg:"#1e40af",fg:"#93c5fd",i:"🛒",logo:GL+"aldi.fr"},
+  {k:["totalenergies","total access","relais total","relais des"],n:"TotalEnergies",bg:"#991b1b",fg:"#fecaca",i:"🔴",logo:GL+"totalenergies.com"},
+  {k:["total "],n:"Total",bg:"#991b1b",fg:"#fecaca",i:"🔴",logo:GL+"totalenergies.com"},
+  {k:["esso"],n:"Esso",bg:"#1e3a8a",fg:"#93c5fd",i:"🔵",logo:GL+"esso.fr"},
+  {k:["bp ","bp-"],n:"BP",bg:"#166534",fg:"#86efac",i:"🟢",logo:GL+"bp.com"},
+  {k:["shell"],n:"Shell",bg:"#854d0e",fg:"#fde68a",i:"🟡",logo:GL+"shell.fr"},
+  {k:["avia"],n:"Avia",bg:"#1e3a8a",fg:"#bfdbfe",i:"🔷",logo:GL+"avia.fr"},
+  {k:["dyneff"],n:"Dyneff",bg:"#9a3412",fg:"#fed7aa",i:"🟠",logo:GL+"dyneff.com"},
+  {k:["vito"],n:"Vito",bg:"#166534",fg:"#86efac",i:"🟢",logo:GL+"vito.fr"},
+  {k:["agip","eni "],n:"Agip/Eni",bg:"#854d0e",fg:"#fde68a",i:"🟡",logo:GL+"eni.com"},
+  {k:["elan"],n:"Elan",bg:"#4c1d95",fg:"#c4b5fd",i:"🟣",logo:GL+"elan.fr"}
+];
 
 // UTILS
 function hav(a,b,c,d){const R=6371,x=(c-a)*Math.PI/180,y=(d-b)*Math.PI/180;const z=Math.sin(x/2)**2+Math.cos(a*Math.PI/180)*Math.cos(c*Math.PI/180)*Math.sin(y/2)**2;return R*2*Math.atan2(Math.sqrt(z),Math.sqrt(1-z));}
@@ -153,7 +176,9 @@ function fetchTJ(url,ms){return fetchT(url,ms).then(r=>{if(!r.ok)throw new Error
 const OVERPASS_SERVERS=[
   "https://overpass-api.de/api/interpreter",
   "https://overpass.kumi.systems/api/interpreter",
-  "https://overpass.private.coffee/api/interpreter"
+  "https://overpass.private.coffee/api/interpreter",
+  "https://maps.mail.ru/osm/tools/overpass/api/interpreter",
+  "https://overpass.openstreetmap.ru/api/interpreter"
 ];
 
 async function fetchOverpass(query,ms){
@@ -175,7 +200,7 @@ async function fetchOverpass(query,ms){
 function fDate(d){if(!d)return"";const dt=new Date(d);return"Modifié le "+dt.getDate()+"/"+(dt.getMonth()<9?"0":"")+(dt.getMonth()+1)+" à "+dt.getHours()+"h"+(dt.getMinutes()<10?"0":"")+dt.getMinutes();}
 function esc(s){const d=document.createElement("div");d.textContent=s;return d.innerHTML;}
 function dBr(a,c,sv){const t=(a+" "+c+" "+sv).toLowerCase();for(const b of BR)for(const k of b.k)if(t.includes(k))return b;return null;}
-function bh(b){return b?'<span class="brand-badge" style="background:'+b.bg+';color:'+b.fg+'">'+b.i+' '+esc(b.n)+'</span>':'';}
+function bh(b){if(!b)return'';const li=b.logo?'<img src="'+b.logo+'" width="16" height="16" style="border-radius:3px;vertical-align:middle;margin-right:4px;object-fit:contain" onerror="this.style.display=\'none\'" loading="lazy">':b.i+' ';return'<span class="brand-badge" style="background:'+b.bg+';color:'+b.fg+'">'+li+esc(b.n)+'</span>';}
 function detectPay(svc){const t=(Array.isArray(svc)?svc.join(" "):(svc||"")).toLowerCase();let cb=false,cash=false;if(t.includes("carte bancaire")||t.includes("cb"))cb=true;if(t.includes("espèces")||t.includes("especes")||t.includes("liquide"))cash=true;if(!cb&&!cash)cb=true;return{cb,cash};}
 function payHTML(p){let h='';if(p.cb)h+='<span class="info-tag info-tag-cb">💳 CB</span>';if(p.cash)h+='<span class="info-tag info-tag-cash">💶 Espèces</span>';return h;}
 const gS='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>';
