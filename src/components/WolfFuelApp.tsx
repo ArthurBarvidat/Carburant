@@ -91,28 +91,16 @@ function addFavBtnToCard(card: Element, userId: string, savedFavs: Set<string>) 
 function injectFavoriteButtons(userId: string) {
   const savedFavs = new Set<string>(JSON.parse(localStorage.getItem('wolf_favorites') ?? '[]'))
 
-  const observeList = (listId: string) => {
-    const list = document.getElementById(listId)
-    if (!list) return
-    // Cartes déjà présentes
-    list.querySelectorAll('.card').forEach(c => addFavBtnToCard(c, userId, savedFavs))
-    // Nouvelles cartes (après rechargement innerHTML)
-    const obs = new MutationObserver(() => {
-      list.querySelectorAll('.card').forEach(c => addFavBtnToCard(c, userId, savedFavs))
-    })
-    obs.observe(list, { childList: true, subtree: true })
-  }
-
-  observeList('res-list')
-  observeList('full-list')
-
-  // Observer aussi les changements d'écran pour ré-injecter
-  const screenObs = new MutationObserver(() => {
+  // Injecter sur les cartes déjà présentes
+  const scanAll = () => {
     ['res-list', 'full-list'].forEach(id => {
       document.getElementById(id)?.querySelectorAll('.card').forEach(c => addFavBtnToCard(c, userId, savedFavs))
     })
-  })
-  screenObs.observe(document.body, { childList: true, subtree: false })
+  }
+  scanAll()
+
+  // Observer tout le body en profondeur — capte les innerHTML= de res-list/full-list
+  new MutationObserver(scanAll).observe(document.body, { childList: true, subtree: true })
 }
 
 // ── Bannière économies dans les résultats ────────────────────────────────────
@@ -633,14 +621,8 @@ async function initProFeatures(userId: string) {
   }
   wait()
 
-  // Ré-injecter badge et favoris à chaque changement d'écran
-  new MutationObserver(() => {
-    injectProBadge()
-    ;['res-list', 'full-list'].forEach(id => {
-      const favs = new Set<string>(JSON.parse(localStorage.getItem('wolf_favorites') ?? '[]'))
-      document.getElementById(id)?.querySelectorAll('.card').forEach(c => addFavBtnToCard(c, userId, favs))
-    })
-  }).observe(document.body, { childList: true, subtree: false })
+  // Ré-injecter le badge Pro à chaque changement d'écran
+  new MutationObserver(injectProBadge).observe(document.body, { childList: true, subtree: false })
 }
 
 // ── Suppression des fonctionnalités Pro ──────────────────────────────────────
