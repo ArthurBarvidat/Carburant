@@ -31,8 +31,18 @@ function AbonnementContent() {
   useEffect(() => {
     // Vérifier si retour depuis Stripe
     const isSuccess = searchParams.get('success') === 'true'
+    const sessionId = searchParams.get('session_id')
+
     if (isSuccess) {
       setSuccess(true)
+      // Confirmer le paiement directement via Stripe sans attendre le webhook
+      if (sessionId) {
+        fetch('/api/confirm-payment', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sessionId }),
+        }).catch(() => {/* silencieux */})
+      }
     }
 
     supabase.auth.getUser().then(({ data }) => {
