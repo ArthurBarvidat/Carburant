@@ -718,7 +718,7 @@ function injectCitySearch() {
 // ── Bouton télécharger l'app Android ────────────────────────────────────────
 function injectDownloadAppButton() {
   if (document.getElementById('wolf-apk-btn')) return
-  const tutoLink = document.querySelector('.tuto-link')
+  const tutoLink = document.getElementById('go-btn')
   if (!tutoLink) return
   const btn = document.createElement('a')
   btn.id = 'wolf-apk-btn'
@@ -732,7 +732,7 @@ function injectDownloadAppButton() {
 // ── Bouton Wolf Pro (non-pro) ────────────────────────────────────────────────
 function injectProButton() {
   if (document.getElementById('wolf-pro-btn')) return
-  const tutoLink = document.querySelector('.tuto-link')
+  const tutoLink = document.getElementById('go-btn')
   if (!tutoLink) return
   const btn = document.createElement('a')
   btn.id = 'wolf-pro-btn'
