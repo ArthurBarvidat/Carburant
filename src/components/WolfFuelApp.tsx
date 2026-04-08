@@ -455,7 +455,11 @@ async function initProFeatures(userId: string) {
 
   // Attendre que le bouton Pro soit injecté pour ajouter les éléments suivants
   const wait = () => {
-    if (document.getElementById('wolf-pro-btn')) {
+    const proBtn = document.getElementById('wolf-pro-btn')
+    if (proBtn) {
+      // Remplacer le bouton "Passer Wolf Pro" par un badge "Actif"
+      proBtn.textContent = '🐺⭐ Wolf Pro — Actif'
+      ;(proBtn as HTMLElement).style.cssText = `display:flex;align-items:center;justify-content:center;gap:8px;margin-top:10px;padding:12px 16px;border-radius:12px;border:1.5px solid rgba(16,185,129,.5);background:linear-gradient(135deg,rgba(16,185,129,.15),rgba(5,150,105,.08));color:#34d399;font-size:14px;font-weight:700;text-decoration:none;font-family:${PC.font};cursor:default;pointer-events:none`
       injectProBadge()
       injectFavoritesPanel(userId)
       injectMonthlySavings(userId)
