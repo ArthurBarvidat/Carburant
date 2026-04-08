@@ -171,7 +171,31 @@ export async function POST(req: NextRequest) {
     }
 
     // Réponse normale sans outil
-    const reply = choice.message?.content ?? 'Désolé, je n\'ai pas pu répondre.'
+    let reply = choice.message?.content ?? 'Désolé, je n\'ai pas pu répondre.'
+
+    // Le modèle a parfois écrit le tool call en texte brut — détecter et exécuter
+    const inlineMatch = reply.match(/<function=search_fuel_prices>\s*(\{[\s\S]*?\})\s*<\/function>/)
+    if (inlineMatch) {
+      try {
+        const args = JSON.parse(inlineMatch[1])
+        const toolResult = await searchFuelPrices(args.city, args.fuel_type)
+        const response2 = await groq.chat.completions.create({
+          model: 'llama-3.3-70b-versatile',
+          messages: [
+            ...groqMessages,
+            { role: 'assistant', content: reply },
+            { role: 'user', content: `Résultat de la recherche :\n${toolResult}\n\nRésume ces prix en 2-3 phrases courtes.` },
+          ],
+          max_tokens: 250,
+          temperature: 0.4,
+        })
+        reply = response2.choices[0]?.message?.content ?? toolResult
+      } catch {
+        // Si parsing échoue, supprimer juste le tag de la réponse
+        reply = reply.replace(/<function=search_fuel_prices>[\s\S]*?<\/function>/g, '').trim()
+      }
+    }
+
     return NextResponse.json({ reply })
 
   } catch (err) {
