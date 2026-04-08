@@ -428,6 +428,29 @@ function parseEVSockets(r){
   return prises;
 }
 
+// Fetch IRVE officiel (API REST française — beaucoup plus rapide qu'Overpass)
+async function fetchIRVE(lat,lon){
+  const url="https://odre.opendatasoft.com/api/explore/v2.1/catalog/datasets/bornes-irve/records?select=id_pdc_itinerance,nom_operateur,ad_station,commune,coordonneesxy,puissance_nominale,prise_type_ef,prise_type_2,prise_type_combo_ccs,prise_type_chademo,prise_type_autre,nbre_pdc,gratuit,acces_recharge&where=within_distance(coordonneesxy,geom'POINT("+lon+" "+lat+")',20km)&limit=150&order_by=distance(coordonneesxy,geom'POINT("+lon+" "+lat+")')";
+  const d=await fetchTJ(url,7000);
+  const rows=d.results||[];
+  if(!rows.length)throw new Error("Aucun résultat IRVE");
+  return rows.map(r=>{
+    const sLat=r.coordonneesxy?.lat||0,sLon=r.coordonneesxy?.lon||0;
+    const prises=[];
+    if(r.prise_type_2&&r.prise_type_2!=="false")prises.push({label:"Type 2",color:"#06b6d4"});
+    if(r.prise_type_combo_ccs&&r.prise_type_combo_ccs!=="false")prises.push({label:"CCS Combo",color:"#8b5cf6"});
+    if(r.prise_type_chademo&&r.prise_type_chademo!=="false")prises.push({label:"CHAdeMO",color:"#f59e0b"});
+    if(r.prise_type_ef&&r.prise_type_ef!=="false")prises.push({label:"Type EF",color:"#22d3ee"});
+    if(!prises.length)prises.push({label:"Borne",color:"#64748b"});
+    const puissance=parseFloat(r.puissance_nominale)||null;
+    let speedCat="inconnu";
+    if(puissance>=50)speedCat="rapide";
+    else if(puissance>=22)speedCat="semi";
+    else if(puissance)speedCat="lente";
+    return{nom:r.nom_operateur||"Borne IRVE",addr:r.ad_station||"",city:r.commune||"",lat:sLat,lon:sLon,dist:hav(lat,lon,sLat,sLon),prises,nbrePDC:parseInt(r.nbre_pdc)||1,puissance,puissanceEstimee:false,speedCat,gratuit:r.gratuit===true||r.gratuit==="true",is24h:false,operateur:r.nom_operateur||null};
+  }).filter(s=>s.dist<=20&&s.lat!==0);
+}
+
 async function loadEVResults(){
   const myToken=++evFetchToken;
   const lat=realGpsLat||cLat, lon=realGpsLon||cLon;
@@ -445,16 +468,23 @@ async function loadEVResults(){
   document.getElementById("res-loading").classList.add("show");
   resetGpsBanner();
 
-  // Calcul bounding box (10x plus rapide que around:)
+  // Calcul bounding box pour Overpass
   const R2=6371, rad2=20;
   const dlat2=rad2/R2*(180/Math.PI);
   const dlon2=rad2/(R2*Math.cos(lat*Math.PI/180))*(180/Math.PI);
   const bbox2=(lat-dlat2).toFixed(5)+","+(lon-dlon2).toFixed(5)+","+(lat+dlat2).toFixed(5)+","+(lon+dlon2).toFixed(5);
   const query2='[out:json][timeout:6];node["amenity"="charging_station"]('+bbox2+');out qt 100;';
 
-  let evData;
-  try{ evData=await fetchOverpass(query2,8000); }
-  catch(e){ showEVFallback(lat,lon,e.message); document.getElementById("res-loading").classList.remove("show"); return; }
+  // Course parallèle : IRVE (rapide) vs Overpass (complet) — le premier gagne
+  let evData; let sourceIRVE=false;
+  try{
+    const winner=await Promise.any([
+      fetchIRVE(lat,lon).then(r=>({src:"irve",data:r})),
+      fetchOverpass(query2,8000).then(r=>({src:"overpass",data:r}))
+    ]);
+    if(winner.src==="irve"){sourceIRVE=true;evStations=winner.data;evStations.sort((a,b)=>a.dist-b.dist);if(myToken!==evFetchToken)return;if(!evStations.length){document.getElementById("res-empty").classList.add("show");document.getElementById("res-loading").classList.remove("show");return;}renderEVResults();document.getElementById("res-loading").classList.remove("show");return;}
+    evData=winner.data;
+  }catch(e){showEVFallback(lat,lon,e.message||"Serveurs indisponibles");document.getElementById("res-loading").classList.remove("show");return;}
 
   {
       const rows=evData.elements||[];
