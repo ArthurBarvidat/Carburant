@@ -266,19 +266,38 @@ dl.querySelectorAll(".di").forEach(el=>{el.onclick=()=>{const dept=DEPTS.find(d=
 rD();document.getElementById("ds").addEventListener("input",e=>rD(e.target.value));
 
 // GEO
-document.getElementById("btn-geo").onclick=()=>{
+document.getElementById("btn-geo").onclick=async()=>{
   document.getElementById("btn-geo").classList.add("selected");
   document.getElementById("btn-dept").classList.remove("selected");
   document.getElementById("dw").classList.remove("show");
   document.getElementById("dept-status").classList.remove("show");
   const st=document.getElementById("geo-status");
-  st.textContent="📡 Localisation en cours...";
   st.className="loc-status show";
+
   if(!navigator.geolocation){
-    st.textContent="❌ GPS non disponible sur cet appareil";
-    st.classList.add("error");
+    st.innerHTML="❌ GPS non disponible sur cet appareil";
     return;
   }
+
+  // Vérifier si la permission est déjà refusée de façon permanente
+  if(navigator.permissions){
+    try{
+      const perm=await navigator.permissions.query({name:"geolocation"});
+      if(perm.state==="denied"){
+        const isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent);
+        const isMobile=/Android|iPhone|iPad/.test(navigator.userAgent);
+        let howTo="";
+        if(isIOS)howTo="Réglages → Safari → Localisation → Autoriser";
+        else if(isMobile)howTo="Paramètres du navigateur → Autorisations → Localisation";
+        else howTo="Cliquez sur l'icône 🔒 dans la barre d'adresse → Autoriser la localisation";
+        st.innerHTML='⚠️ Localisation bloquée — Pour l\'activer :<br><span style="font-size:11px;opacity:.8">'+howTo+'</span>';
+        return;
+      }
+    }catch(e){/* permissions API non supportée, on continue normalement */}
+  }
+
+  st.textContent="📡 Localisation en cours...";
+
   function onSuccess(pos){
     cLat=pos.coords.latitude;cLon=pos.coords.longitude;
     realGpsLat=cLat;realGpsLon=cLon;gpsAsked=true;
@@ -292,19 +311,26 @@ document.getElementById("btn-geo").onclick=()=>{
   }
   function onError(err){
     if(err.code===3){
-      // Timeout GPS précis → on retente en basse précision (réseau/IP), beaucoup plus rapide
       st.textContent="📡 GPS lent, tentative réseau...";
       navigator.geolocation.getCurrentPosition(onSuccess,onFinalError,
         {enableHighAccuracy:false,timeout:8000,maximumAge:60000});
     }else onFinalError(err);
   }
   function onFinalError(err){
-    st.classList.add("error");
-    if(err.code===1)st.textContent="❌ Permission refusée — choisissez un département";
-    else if(err.code===2)st.textContent="❌ Signal GPS absent — choisissez un département";
-    else st.textContent="❌ Localisation impossible — choisissez un département";
+    if(err.code===1){
+      const isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent);
+      const isMobile=/Android|iPhone|iPad/.test(navigator.userAgent);
+      let howTo="";
+      if(isIOS)howTo="Réglages → Safari → Localisation → Autoriser";
+      else if(isMobile)howTo="Paramètres du navigateur → Autorisations → Localisation";
+      else howTo="Icône 🔒 dans la barre d'adresse → Autoriser la localisation";
+      st.innerHTML='⚠️ Localisation bloquée — Pour l\'activer :<br><span style="font-size:11px;opacity:.8">'+howTo+'</span>';
+    }else if(err.code===2){
+      st.textContent="❌ Signal GPS absent — choisissez une ville";
+    }else{
+      st.textContent="❌ Localisation impossible — choisissez une ville";
+    }
   }
-  // 1er essai : GPS précis, 15s
   navigator.geolocation.getCurrentPosition(onSuccess,onError,
     {enableHighAccuracy:true,timeout:15000,maximumAge:0});
 };
