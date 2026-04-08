@@ -484,11 +484,26 @@ let _scriptsLoaded = false
 
 async function runProCheck() {
   try {
-    const { data: authData } = await supabase.auth.getUser()
-    if (!authData.user) return
+    // Lire la session locale (instantané, pas de réseau)
+    const { data: sessionData } = await supabase.auth.getSession()
+    const user = sessionData.session?.user
+    if (!user) return
+
+    // Vérifier le cache local d'abord pour un affichage immédiat
+    const cacheKey = `wolf_pro_${user.id}`
+    if (localStorage.getItem(cacheKey) === '1') {
+      await initProFeatures(user.id)
+    }
+
+    // Vérifier en base et mettre à jour le cache
     const { data: profile } = await supabase
-      .from('profiles').select('is_pro').eq('id', authData.user.id).single()
-    if (profile?.is_pro) await initProFeatures(authData.user.id)
+      .from('profiles').select('is_pro').eq('id', user.id).single()
+    if (profile?.is_pro) {
+      localStorage.setItem(cacheKey, '1')
+      await initProFeatures(user.id)
+    } else {
+      localStorage.removeItem(cacheKey)
+    }
   } catch { /* silencieux */ }
 }
 

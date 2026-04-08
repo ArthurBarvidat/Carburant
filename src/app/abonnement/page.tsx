@@ -41,6 +41,14 @@ function AbonnementContent() {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ sessionId }),
+        }).then(async (res) => {
+          if (res.ok) {
+            // Mettre en cache le statut Pro pour un affichage immédiat au prochain chargement
+            const { data } = await supabase.auth.getSession()
+            if (data.session?.user?.id) {
+              localStorage.setItem(`wolf_pro_${data.session.user.id}`, '1')
+            }
+          }
         }).catch(() => {/* silencieux */})
       }
     }
