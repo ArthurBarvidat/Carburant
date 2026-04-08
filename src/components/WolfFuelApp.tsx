@@ -32,6 +32,87 @@ function injectNoAds() {
   document.head.appendChild(s)
 }
 
+// ── Bouton Signaler sur chaque carte (tous utilisateurs connectés) ───────────
+function addSignalerBtnToCard(card: Element, userId: string) {
+  if (card.querySelector('.wolf-signaler-btn')) return
+  const navBtns = card.querySelector('.nav-btns')
+  if (!navBtns) return
+
+  const nameEl = card.querySelector('.station-name')
+  const addrEl = card.querySelector('.station-addr')
+  const priceEl = card.querySelector('.price-highlight') ?? card.querySelector('.price-val')
+  const fuelEl = card.querySelector('.price-fuel')
+
+  const stationName = nameEl?.textContent?.trim() ?? ''
+  const stationAddr = addrEl?.textContent?.trim() ?? ''
+  const officialPrice = parseFloat((priceEl?.textContent ?? '').replace(',', '.').replace('€', '')) || 0
+  const fuelType = fuelEl?.textContent?.trim() ?? 'Gazole'
+  const stationId = btoa(unescape(encodeURIComponent((stationName + stationAddr).slice(0, 60)))).slice(0, 40)
+
+  // Bouton Signaler
+  const btn = document.createElement('button')
+  btn.className = 'wolf-signaler-btn'
+  btn.textContent = '⚠️ Signaler'
+  btn.style.cssText = `padding:8px 12px;border-radius:8px;border:1px solid rgba(245,158,11,.3);background:rgba(245,158,11,.06);color:#f59e0b;font-size:12px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif`
+
+  // Panel signalement (caché par défaut)
+  const panel = document.createElement('div')
+  panel.className = 'wolf-report-panel'
+  panel.style.cssText = `display:none;margin-top:10px;padding:12px;border-radius:10px;background:rgba(245,158,11,.06);border:1px solid rgba(245,158,11,.2)`
+  panel.innerHTML = `
+    <div style="font-size:12px;font-weight:700;color:#f59e0b;margin-bottom:6px">Signaler un prix incorrect</div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <input type="number" placeholder="Prix réel (ex: 1.782)" step="0.001" class="wolf-report-input"
+        style="flex:1;padding:9px 12px;border-radius:8px;border:1px solid rgba(245,158,11,.3);background:rgba(245,158,11,.05);color:#f1f5f9;font-size:13px;outline:none;font-family:'DM Sans',sans-serif"/>
+      <button class="wolf-report-send" style="padding:9px 14px;border-radius:8px;border:none;background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;font-size:12px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap">Envoyer</button>
+    </div>
+    <div class="wolf-report-msg" style="font-size:12px;margin-top:6px;font-weight:700;display:none"></div>
+  `
+
+  btn.addEventListener('click', (e) => {
+    e.stopPropagation()
+    panel.style.display = panel.style.display === 'none' ? 'block' : 'none'
+  })
+
+  panel.querySelector('.wolf-report-send')?.addEventListener('click', async () => {
+    const input = panel.querySelector('.wolf-report-input') as HTMLInputElement
+    const msgEl = panel.querySelector('.wolf-report-msg') as HTMLElement
+    const price = parseFloat(input.value)
+    if (!price || isNaN(price)) { msgEl.textContent = '⚠️ Entre un prix valide'; msgEl.style.color = '#f87171'; msgEl.style.display = 'block'; return }
+    try {
+      const res = await fetch('/api/community-reports', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, stationId, stationName, fuelType, reportedPrice: price, officialPrice }),
+      })
+      const data = await res.json()
+      if (!res.ok) { msgEl.textContent = data.error ?? '❌ Erreur'; msgEl.style.color = '#f87171' }
+      else { msgEl.textContent = '✅ Signalement envoyé, merci !'; msgEl.style.color = '#34d399'; input.value = '' }
+      msgEl.style.display = 'block'
+      setTimeout(() => { panel.style.display = 'none'; msgEl.style.display = 'none' }, 2500)
+    } catch { msgEl.textContent = '❌ Erreur réseau'; msgEl.style.color = '#f87171'; msgEl.style.display = 'block' }
+  })
+
+  navBtns.appendChild(btn)
+  ;(card as HTMLElement).appendChild(panel)
+}
+
+// ── Injection Signaler sur toutes les cartes (tous utilisateurs connectés) ────
+function injectSignalerButtons(userId: string) {
+  const scan = () => {
+    ['res-list', 'full-list'].forEach(id => {
+      document.getElementById(id)?.querySelectorAll('.card').forEach(c => addSignalerBtnToCard(c, userId))
+    })
+  }
+  scan()
+  // Observer les deux listes directement — innerHTML= déclenche childList sur l'élément
+  const obs = new MutationObserver(scan)
+  const resList = document.getElementById('res-list')
+  const fullList = document.getElementById('full-list')
+  if (resList) obs.observe(resList, { childList: true })
+  if (fullList) obs.observe(fullList, { childList: true })
+}
+
 // ── Boutons favoris sur chaque carte ────────────────────────────────────────
 function addFavBtnToCard(card: Element, userId: string, savedFavs: Set<string>) {
   if (card.querySelector('.wolf-fav-btn')) return
@@ -91,22 +172,18 @@ function addFavBtnToCard(card: Element, userId: string, savedFavs: Set<string>) 
 function injectFavoriteButtons(userId: string) {
   const savedFavs = new Set<string>(JSON.parse(localStorage.getItem('wolf_favorites') ?? '[]'))
 
-  const scanList = (listId: string) => {
-    document.getElementById(listId)?.querySelectorAll('.card').forEach(c => addFavBtnToCard(c, userId, savedFavs))
+  const scan = () => {
+    ['res-list', 'full-list'].forEach(id => {
+      document.getElementById(id)?.querySelectorAll('.card').forEach(c => addFavBtnToCard(c, userId, savedFavs))
+    })
   }
+  scan()
 
-  // Scanner les cartes déjà présentes
-  scanList('res-list')
-  scanList('full-list')
-
-  // Observer chaque liste directement — innerHTML= déclenche childList sur l'élément lui-même
-  const observeList = (listId: string) => {
-    const el = document.getElementById(listId)
-    if (!el) return
-    new MutationObserver(() => scanList(listId)).observe(el, { childList: true })
-  }
-  observeList('res-list')
-  observeList('full-list')
+  const obs = new MutationObserver(scan)
+  const resList = document.getElementById('res-list')
+  const fullList = document.getElementById('full-list')
+  if (resList) obs.observe(resList, { childList: true })
+  if (fullList) obs.observe(fullList, { childList: true })
 }
 
 // ── Bannière économies dans les résultats ────────────────────────────────────
@@ -716,10 +793,15 @@ export default function WolfFuelApp() {
       s1.src = '/main-script.js?t=' + Date.now()
       s1.defer = false
       document.body.appendChild(s1)
-      s1.onload = () => {
+      s1.onload = async () => {
         injectCitySearch()
         injectDownloadAppButton()
         injectProButton()
+        // Injecter Signaler pour tous les utilisateurs connectés
+        const { data: sessionData } = await supabase.auth.getSession()
+        if (sessionData.session?.user?.id) {
+          injectSignalerButtons(sessionData.session.user.id)
+        }
         // Lancer immédiatement — si session pas encore prête, runProCheck retentera
         runProCheck()
       }
