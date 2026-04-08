@@ -669,11 +669,15 @@ function removeProFeatures() {
 // Variable module-level — persiste entre navigations Next.js
 let _scriptsLoaded = false
 
-async function runProCheck() {
+async function runProCheck(attempt = 0) {
   try {
     const { data: sessionData } = await supabase.auth.getSession()
     const user = sessionData.session?.user
-    if (!user) return
+    // Session pas encore prête — retry jusqu'à 5 fois (toutes les 600ms)
+    if (!user) {
+      if (attempt < 5) setTimeout(() => runProCheck(attempt + 1), 600)
+      return
+    }
 
     const cacheKey = `wolf_pro_${user.id}`
 
@@ -719,7 +723,6 @@ async function runProCheck() {
 export default function WolfFuelApp() {
   useEffect(() => {
     const loadMainScript = () => {
-      // Supprimer l'ancien script pour forcer la ré-exécution
       document.querySelectorAll('script[src^="/main-script.js"]').forEach(s => s.remove())
       const s1 = document.createElement('script')
       s1.src = '/main-script.js?t=' + Date.now()
@@ -729,12 +732,12 @@ export default function WolfFuelApp() {
         injectCitySearch()
         injectDownloadAppButton()
         injectProButton()
-        setTimeout(runProCheck, 800)
+        // Lancer immédiatement — si session pas encore prête, runProCheck retentera
+        runProCheck()
       }
     }
 
     if (_scriptsLoaded) {
-      // Retour sur la page — relancer main-script sur le nouveau DOM
       loadMainScript()
       return
     }
@@ -749,6 +752,30 @@ export default function WolfFuelApp() {
     setTimeout(() => {
       if (!document.querySelector('script[src^="/main-script.js"]')) loadMainScript()
     }, 500)
+
+    // Écouter les changements de session Supabase :
+    // quand l'utilisateur se connecte, runProCheck est appelé dès que la session est prête
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+        // Attendre que le bouton Pro soit injecté dans le DOM
+        const waitAndCheck = (attempts = 0) => {
+          if (document.getElementById('wolf-pro-btn')) {
+            runProCheck()
+          } else if (attempts < 20) {
+            setTimeout(() => waitAndCheck(attempts + 1), 200)
+          }
+        }
+        waitAndCheck()
+      }
+      if (event === 'SIGNED_OUT') {
+        localStorage.removeItem('wolf_favorites')
+        // Nettoyer toutes les clés wolf_pro_* du cache
+        Object.keys(localStorage).filter(k => k.startsWith('wolf_pro_')).forEach(k => localStorage.removeItem(k))
+        removeProFeatures()
+      }
+    })
+
+    return () => { subscription.unsubscribe() }
   }, [])
 
   return (
