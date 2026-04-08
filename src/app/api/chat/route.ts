@@ -21,14 +21,29 @@ Garde tes réponses courtes (3-4 phrases max) sauf si on te demande plus de dét
 // Appel réel à l'API gouvernementale des prix carburants
 async function searchFuelPrices(city: string, fuelType: string): Promise<string> {
   try {
-    // Géocoder la ville
+    // Géocoder la ville — récupérer plusieurs résultats pour détecter les homonymes
     const geoRes = await fetch(
-      `https://api-adresse.data.gouv.fr/search/?q=${encodeURIComponent(city)}&type=municipality&limit=1`
+      `https://api-adresse.data.gouv.fr/search/?q=${encodeURIComponent(city)}&type=municipality&limit=5`
     )
     const geoData = await geoRes.json()
-    const feature = geoData.features?.[0]
-    if (!feature) return `Ville "${city}" introuvable.`
+    const features = geoData.features ?? []
+    if (!features.length) return `Ville "${city}" introuvable.`
 
+    // Détecter les villes homonymes (même nom, départements différents)
+    const firstName = features[0].properties.name?.toLowerCase()
+    const homonymes = features.filter((f: { properties: { name?: string } }) =>
+      f.properties.name?.toLowerCase() === firstName
+    )
+
+    if (homonymes.length > 1) {
+      // Plusieurs villes avec le même nom — demander précision
+      const options = homonymes.map((f: { properties: { label: string; context: string } }) =>
+        `• ${f.properties.label} (${f.properties.context?.split(',')[0]?.trim()})`
+      ).join('\n')
+      return `Il existe plusieurs communes nommées "${city}" en France :\n${options}\n\nPrécise le département ou la région pour que je cherche les bons prix !`
+    }
+
+    const feature = features[0]
     const lon = feature.geometry.coordinates[0]
     const lat = feature.geometry.coordinates[1]
     const cityName = feature.properties.label
