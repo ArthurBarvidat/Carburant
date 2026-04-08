@@ -26,7 +26,7 @@ export async function GET(req: NextRequest) {
     }
 
     const subscription = await stripe.subscriptions.retrieve(profile.subscription_id) as unknown as {
-      status: string, current_period_end: number, cancel_at_period_end: boolean
+      status: string, current_period_end: number | null | undefined, cancel_at_period_end: boolean
     }
 
     // Synchroniser le statut réel depuis Stripe → Supabase (contourne le webhook)
@@ -42,9 +42,10 @@ export async function GET(req: NextRequest) {
       }).eq('id', userId)
     }
 
-    const endDate = new Date(subscription.current_period_end * 1000).toLocaleDateString('fr-FR', {
-      day: 'numeric', month: 'long', year: 'numeric',
-    })
+    const d = subscription.current_period_end ? new Date(subscription.current_period_end * 1000) : null
+    const endDate = d && !isNaN(d.getTime())
+      ? d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })
+      : null
 
     return NextResponse.json({ endDate, cancelAtPeriodEnd: subscription.cancel_at_period_end, status: subscription.status })
   } catch (err) {
