@@ -43,7 +43,6 @@ export default function ProfileButton() {
 
       loadPending(uid)
 
-      // Realtime — nouvelles demandes d'amis
       const channel = supabase
         .channel('friend-requests')
         .on(
@@ -56,7 +55,6 @@ export default function ProfileButton() {
           },
           async (payload) => {
             if (payload.new.status === 'pending') {
-              // Récupérer le pseudo de l'expéditeur
               const { data: sender } = await supabase
                 .from('profiles')
                 .select('pseudo')
@@ -94,7 +92,7 @@ export default function ProfileButton() {
             color: '#f1f5f9',
             fontSize: '14px',
             fontWeight: 700,
-            fontFamily: "'DM Sans',sans-serif",
+            fontFamily: "'DM Sans', sans-serif",
             boxShadow: '0 4px 24px rgba(168,85,247,.3)',
             cursor: 'pointer',
             maxWidth: '260px',

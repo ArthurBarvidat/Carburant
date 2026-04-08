@@ -66,40 +66,44 @@ const PRISE_COMPAT: Record<string, string[]> = {
 }
 
 // ── IRVE — deux endpoints tentés en parallèle ─────────────────────────────
+// champs IRVE — essaie plusieurs variantes du nom du champ géo (l'API change selon les versions)
 async function fetchIRVE(lat: number, lon: number, rad: number): Promise<Record<string, unknown>[]> {
-  const fields = 'id_station_itinerance,nom_station,adresse_station,consolidated_commune,code_postal,coordonneesXY,puissance_nominale,prise_type_2,prise_type_combo_ccs,prise_type_chademo,prise_type_autre,nbre_pdc,horaires,operateur'
-  const mkUrl = (base: string, geoField: string) => {
-    const where = `within_distance(${geoField}, geom'POINT(${lon} ${lat})', ${rad}km)`
-    return `${base}?select=${encodeURIComponent(fields)}&where=${encodeURIComponent(where)}&limit=100`
+  const fields = 'id_station_itinerance,nom_station,adresse_station,consolidated_commune,code_postal,coordonneesxy,puissance_nominale,prise_type_2,prise_type_combo_ccs,prise_type_chademo,prise_type_autre,nbre_pdc,horaires,operateur'
+  const BASE = 'https://odre.opendatasoft.com/api/explore/v2.1/catalog/datasets/bornes-irve/records'
+  const mkUrl = (geoField: string) => {
+    const where = `within_distance(${geoField},geom'POINT(${lon} ${lat})',${rad}km)`
+    return `${BASE}?select=${encodeURIComponent(fields)}&where=${encodeURIComponent(where)}&limit=100`
   }
-  const urls = [
-    mkUrl('https://odre.opendatasoft.com/api/explore/v2.1/catalog/datasets/bornes-irve/records', 'coordonneesXY'),
-    mkUrl('https://odre.opendatasoft.com/api/explore/v2.1/catalog/datasets/bornes-irve/records', 'geo_point_2d'),
-  ]
+  // Essaie les variantes de noms de champ géo connues en parallèle
   const data = await Promise.any(
-    urls.map(url =>
-      fetch(url, { signal: AbortSignal.timeout(12000) })
+    ['coordonneesxy', 'geo_point_2d', 'coordonneesXY'].map(gf =>
+      fetch(mkUrl(gf), { signal: AbortSignal.timeout(10000) })
         .then(r => { if (!r.ok) throw new Error('IRVE ' + r.status); return r.json() })
-        .then(d => { if (!Array.isArray(d.results) || d.results.length === 0) throw new Error('empty'); return d.results as Record<string, unknown>[] })
+        .then((d: Record<string, unknown>) => {
+          const rows = d.results as Record<string, unknown>[]
+          if (!Array.isArray(rows) || rows.length === 0) throw new Error('empty')
+          return rows
+        })
     )
   )
   return data
 }
 
-// ── Overpass (fallback OSM) — 4 serveurs en parallèle, timeout généreux ───
+// ── Overpass (fallback OSM) — 5 serveurs en parallèle ────────────────────────
 const OVERPASS_SERVERS = [
   'https://overpass-api.de/api/interpreter',
   'https://overpass.kumi.systems/api/interpreter',
   'https://overpass.private.coffee/api/interpreter',
   'https://overpass.openstreetmap.ru/api/interpreter',
+  'https://maps.mail.ru/osm/tools/overpass/api/interpreter',
 ]
 async function fetchOverpass(lat: number, lon: number, rad: number): Promise<{ elements: Record<string, unknown>[] }> {
   const radM  = Math.round(rad * 1000)
-  const query = `[out:json][timeout:30];node["amenity"="charging_station"](around:${radM},${lat},${lon});out body qt 200;`
+  const query = `[out:json][timeout:25];node["amenity"="charging_station"](around:${radM},${lat},${lon});out body qt 200;`
   try {
     return await Promise.any(
       OVERPASS_SERVERS.map(srv =>
-        fetch(srv + '?data=' + encodeURIComponent(query), { signal: AbortSignal.timeout(22000) })
+        fetch(srv + '?data=' + encodeURIComponent(query), { signal: AbortSignal.timeout(20000) })
           .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json() as Promise<{ elements: Record<string, unknown>[] }> })
       )
     )
@@ -167,23 +171,19 @@ function ResultatContent() {
     }
   }, [lat, lon, fuel, fc])
 
-  // ── Fetch EV ─────────────────────────────────────────────────────────────
+  // ── Fetch EV — course parallèle IRVE vs Overpass, le premier gagne ─────────
   const loadEV = useCallback(async () => {
     setStatus('loading')
     try {
-      let list: EVStation[] = []
-
-      // 1️⃣ IRVE — API officielle française (rapide, adresses complètes)
-      try {
-        const rows = await fetchIRVE(lat, lon, 20)
-        list = rows.map(r => {
-          const geom = r.coordonneesXY as { lat?: number; lon?: number } | null
+      const parseIRVE = (rows: Record<string, unknown>[]): EVStation[] =>
+        rows.map(r => {
+          // Le champ géo peut s'appeler coordonneesxy ou geo_point_2d selon la version
+          const geom = (r.coordonneesxy ?? r.geo_point_2d ?? r.coordonneesXY) as { lat?: number; lon?: number } | null
           const sLat = geom?.lat ?? 0, sLon = geom?.lon ?? 0
           const prises: { label: string; color: string }[] = []
           if ((r.prise_type_2 as number) > 0)         prises.push({ label: 'Type 2',    color: '#06b6d4' })
           if ((r.prise_type_combo_ccs as number) > 0) prises.push({ label: 'CCS Combo', color: '#8b5cf6' })
           if ((r.prise_type_chademo as number) > 0)   prises.push({ label: 'CHAdeMO',   color: '#f59e0b' })
-          if ((r.prise_type_autre as number) > 0 && !prises.length) prises.push({ label: 'Borne', color: '#64748b' })
           if (!prises.length) prises.push({ label: 'Borne', color: '#64748b' })
           const puissance = r.puissance_nominale != null ? parseFloat(String(r.puissance_nominale)) : null
           const speedCat: EVStation['speedCat'] = !puissance ? 'inconnu' : puissance >= 50 ? 'rapide' : puissance >= 22 ? 'semi' : 'lente'
@@ -199,10 +199,9 @@ function ResultatContent() {
             operateur: String(r.operateur ?? ''),
           }
         })
-      } catch {
-        // 2️⃣ Fallback Overpass (4 serveurs en parallèle, timeout 22s)
-        const data = await fetchOverpass(lat, lon, 20)
-        list = (data.elements ?? []).map(r => {
+
+      const parseOverpass = (elements: Record<string, unknown>[]): EVStation[] =>
+        elements.map(r => {
           const t = (r.tags ?? {}) as Record<string, string>
           const sLat = parseFloat(String(r.lat ?? 0)), sLon = parseFloat(String(r.lon ?? 0))
           const prises: { label: string; color: string }[] = []
@@ -218,11 +217,11 @@ function ResultatContent() {
           }
           if (!puissance) {
             const op = (t.operator || t.brand || '').toLowerCase()
-            if (op.includes('ionity'))    { puissance = 350; puissanceEstimee = true }
+            if (op.includes('ionity'))       { puissance = 350; puissanceEstimee = true }
             else if (op.includes('fastned')) { puissance = 300; puissanceEstimee = true }
-            else if (t['socket:ccs'])     { puissance = 50;  puissanceEstimee = true }
-            else if (t['socket:type2'])   { puissance = 22;  puissanceEstimee = true }
-            else if (t['socket:type1'])   { puissance = 7;   puissanceEstimee = true }
+            else if (t['socket:ccs'])        { puissance = 50;  puissanceEstimee = true }
+            else if (t['socket:type2'])      { puissance = 22;  puissanceEstimee = true }
+            else if (t['socket:type1'])      { puissance = 7;   puissanceEstimee = true }
           }
           const speedCat: EVStation['speedCat'] = !puissance ? 'inconnu' : puissance >= 50 ? 'rapide' : puissance >= 22 ? 'semi' : 'lente'
           const nbSockets = Object.keys(t).filter(k => k.startsWith('socket:') && !k.includes(':', 7)).length
@@ -238,9 +237,14 @@ function ResultatContent() {
             operateur: t.operator || t.brand || '',
           }
         })
-      }
 
-      const sorted = list
+      // Course parallèle : IRVE vs Overpass — le premier avec des résultats gagne
+      const winner = await Promise.any([
+        fetchIRVE(lat, lon, 20).then(rows => parseIRVE(rows)),
+        fetchOverpass(lat, lon, 20).then(d => parseOverpass(d.elements ?? [])),
+      ])
+
+      const sorted = winner
         .filter(s => s.lat && s.lon)
         .filter(s => !(s.name === 'Borne de recharge' && s.prises.length === 1 && s.prises[0].label === 'Borne'))
         .sort((a, b) => a.dist - b.dist)
