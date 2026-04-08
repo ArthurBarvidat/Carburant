@@ -162,7 +162,7 @@ export default function WolfChat() {
                       borderRadius: m.role === 'user' ? '14px 14px 4px 14px' : '14px 14px 14px 4px',
                       background: m.role === 'user' ? 'linear-gradient(135deg,#a855f7,#7c3aed)' : 'rgba(168,85,247,.1)',
                       border: m.role === 'user' ? 'none' : '1px solid rgba(168,85,247,.2)',
-                      color: '#f1f5f9', fontSize: 13, lineHeight: 1.55, whiteSpace: 'pre-wrap',
+                      color: '#f1f5f9', fontSize: 13, lineHeight: 1.55, whiteSpace: 'pre-wrap', wordBreak: 'break-word', overflowWrap: 'break-word',
                     }}>
                       {m.text}
                     </div>
