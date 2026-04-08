@@ -90,17 +90,35 @@ function addFavBtnToCard(card: Element, userId: string, savedFavs: Set<string>) 
 
 function injectFavoriteButtons(userId: string) {
   const savedFavs = new Set<string>(JSON.parse(localStorage.getItem('wolf_favorites') ?? '[]'))
+  const w = window as unknown as Record<string, unknown>
 
-  // Injecter sur les cartes déjà présentes
   const scanAll = () => {
     ['res-list', 'full-list'].forEach(id => {
       document.getElementById(id)?.querySelectorAll('.card').forEach(c => addFavBtnToCard(c, userId, savedFavs))
     })
   }
+
+  // Scanner les cartes déjà présentes
   scanAll()
 
-  // Observer tout le body en profondeur — capte les innerHTML= de res-list/full-list
-  new MutationObserver(scanAll).observe(document.body, { childList: true, subtree: true })
+  // Patcher renderResults et renderFull (fonctions globales de main-script.js)
+  // — appelées à chaque mise à jour de la liste → injection garantie
+  const origRenderResults = w.renderResults as ((...args: unknown[]) => void) | undefined
+  if (origRenderResults) {
+    w.renderResults = (...args: unknown[]) => { origRenderResults(...args); setTimeout(scanAll, 0) }
+  }
+  const origRenderFull = w.renderFull as ((...args: unknown[]) => void) | undefined
+  if (origRenderFull) {
+    w.renderFull = (...args: unknown[]) => { origRenderFull(...args); setTimeout(scanAll, 0) }
+  }
+  const origRenderEVResults = w.renderEVResults as ((...args: unknown[]) => void) | undefined
+  if (origRenderEVResults) {
+    w.renderEVResults = (...args: unknown[]) => { origRenderEVResults(...args); setTimeout(scanAll, 0) }
+  }
+  const origRenderFullEV = w.renderFullEV as ((...args: unknown[]) => void) | undefined
+  if (origRenderFullEV) {
+    w.renderFullEV = (...args: unknown[]) => { origRenderFullEV(...args); setTimeout(scanAll, 0) }
+  }
 }
 
 // ── Bannière économies dans les résultats ────────────────────────────────────
