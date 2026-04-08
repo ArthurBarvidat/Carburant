@@ -684,14 +684,28 @@ function renderEVResults(){
     ).join("");
 
     // Vitesse de charge badge (comme prix chez carburant)
+    // Infos puissance : si inconnue, deviner depuis les prises
+    const priseLabels=s.prises.map(p=>p.label);
+    const hasCCS=priseLabels.some(l=>l.includes("CCS"));
+    const hasCHAdeMO=priseLabels.some(l=>l.includes("CHAdeMO"));
+    const hasType2=priseLabels.some(l=>l.includes("Type 2"));
+    const hasTesla=priseLabels.some(l=>l.includes("Tesla"));
+    let speedFallback="";
+    if(!speed){
+      let hint="",hintColor="#94a3b8";
+      if(hasCCS||hasCHAdeMO){hint="Charge rapide probable (DC)";hintColor="#f59e0b";}
+      else if(hasTesla){hint="Superchargeur Tesla";hintColor="#ef4444";}
+      else if(hasType2){hint="Charge AC (jusqu'à 22kW)";hintColor="#06b6d4";}
+      else{hint="Puissance non renseignée";hintColor="#64748b";}
+      speedFallback='<div style="display:inline-flex;align-items:center;gap:5px;padding:6px 12px;background:rgba(100,116,139,0.08);border:1px solid rgba(100,116,139,0.2);border-radius:10px;margin-bottom:6px">'+
+        '<span>🔌</span><div style="font-weight:600;color:'+hintColor+';font-size:12px">'+hint+'</div></div>';
+    }
     const speedHTML=speed?
       '<div style="display:inline-flex;align-items:center;gap:5px;padding:6px 12px;background:'+speed.bg+';border:1px solid '+speed.color+'33;border-radius:10px;margin-bottom:6px">'+
         '<span style="font-size:14px">'+speed.icon+'</span>'+
         '<div><div style="font-weight:800;color:'+speed.color+';font-size:13px">'+speed.label+'</div>'+
         '<div style="font-size:11px;color:'+speed.color+'99">'+speed.sublabel+'</div></div>'+
-      '</div>':
-      '<div style="display:inline-flex;align-items:center;gap:5px;padding:6px 12px;background:rgba(100,116,139,0.1);border:1px solid rgba(100,116,139,0.2);border-radius:10px;margin-bottom:6px">'+
-        '<span>🔌</span><div style="font-weight:700;color:#94a3b8;font-size:13px">Puissance inconnue</div></div>';
+      '</div>':speedFallback;
 
     const tags=[];
     if(s.gratuit)tags.push('<span class="info-tag info-tag-cb">🆓 Gratuit</span>');
@@ -870,7 +884,13 @@ function renderFullEV(list){
     const brand=getEVBrand(s.operateur);
     const brandHTML=brand?'<span class="brand-badge" style="background:'+brand.bg+';color:'+brand.fg+'">'+brand.i+' '+esc(brand.n)+'</span>':'';
     const speed=getChargeSpeed(s.puissance,s.puissanceEstimee);
-    const speedHTML=speed?'<div style="display:inline-flex;align-items:center;gap:5px;padding:5px 10px;background:'+speed.bg+';border:1px solid '+speed.color+'33;border-radius:8px;margin-bottom:5px"><span>'+speed.icon+'</span><span style="font-weight:700;color:'+speed.color+';font-size:12px">'+speed.label+' · '+speed.sublabel+'</span></div>':'';
+    const _pl=s.prises.map(p=>p.label);
+    const _hasCCS=_pl.some(l=>l.includes("CCS")),_hasCHAdeMO=_pl.some(l=>l.includes("CHAdeMO")),_hasType2=_pl.some(l=>l.includes("Type 2")),_hasTesla=_pl.some(l=>l.includes("Tesla"));
+    let _hint="Puissance non renseignée",_hintColor="#64748b";
+    if(_hasCCS||_hasCHAdeMO){_hint="Charge rapide probable (DC)";_hintColor="#f59e0b";}
+    else if(_hasTesla){_hint="Superchargeur Tesla";_hintColor="#ef4444";}
+    else if(_hasType2){_hint="Charge AC (jusqu'à 22kW)";_hintColor="#06b6d4";}
+    const speedHTML=speed?'<div style="display:inline-flex;align-items:center;gap:5px;padding:5px 10px;background:'+speed.bg+';border:1px solid '+speed.color+'33;border-radius:8px;margin-bottom:5px"><span>'+speed.icon+'</span><span style="font-weight:700;color:'+speed.color+';font-size:12px">'+speed.label+' · '+speed.sublabel+'</span></div>':'<div style="display:inline-flex;align-items:center;gap:5px;padding:5px 10px;background:rgba(100,116,139,0.08);border:1px solid rgba(100,116,139,0.2);border-radius:8px;margin-bottom:5px"><span>🔌</span><span style="font-weight:600;color:'+_hintColor+';font-size:12px">'+_hint+'</span></div>';
     const prisesHTML=s.prises.map(p=>'<span class="info-tag" style="background:'+p.color+'1a;color:'+p.color+';border:1px solid '+p.color+'44">'+p.label+'</span>').join("");
     const addrLine=[s.addr,(s.cp?s.cp+" ":"")+s.city].filter(Boolean).join(", ")||("📍 "+s.lat.toFixed(4)+", "+s.lon.toFixed(4));
     const tags=[];
