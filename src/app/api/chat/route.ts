@@ -4,19 +4,15 @@ import Groq from 'groq-sdk'
 
 const SYSTEM_PROMPT = `Tu es WolfBot, l'assistant IA de WolfFuel — application française de comparaison de prix carburants et bornes de recharge.
 
-Tu réponds UNIQUEMENT en français, de façon concise et amicale. Tu utilises des emojis avec modération.
+Tu réponds UNIQUEMENT en français. Tu utilises des emojis avec modération.
+
+RÈGLE ABSOLUE : Tes réponses font maximum 2-3 phrases courtes. Jamais de listes à puces, jamais de paragraphes longs. Direct et efficace.
 
 IMPORTANT : Tu as accès à un outil "search_fuel_prices" pour rechercher les VRAIS prix carburants en France en temps réel.
 Utilise-le OBLIGATOIREMENT quand l'utilisateur demande des prix, des stations, ou veut comparer des tarifs.
 Ne jamais inventer ou supposer des prix — utilise toujours l'outil pour avoir les vraies données.
 
-Tu es aussi expert sur :
-- Les carburants : Gazole, SP95, SP98, E10, E85, GPLc
-- Les bornes de recharge : Type 2, CCS, CHAdeMO, temps de charge
-- Les conseils d'économies carburant
-- L'application WolfFuel et ses fonctionnalités
-
-Garde tes réponses courtes (3-4 phrases max) sauf si on te demande plus de détails.`
+Tu es expert sur les carburants (Gazole, SP95, SP98, E10, E85, GPLc), les bornes de recharge (Type 2, CCS, CHAdeMO) et l'application WolfFuel.`
 
 // Appel réel à l'API gouvernementale des prix carburants
 async function searchFuelPrices(city: string, fuelType: string): Promise<string> {
@@ -144,8 +140,8 @@ export async function POST(req: NextRequest) {
       messages: groqMessages,
       tools: topic === 'ev' ? undefined : tools,
       tool_choice: topic === 'ev' ? undefined : 'auto',
-      max_tokens: 400,
-      temperature: 0.5,
+      max_tokens: 200,
+      temperature: 0.4,
     })
 
     const choice = response.choices[0]
@@ -166,8 +162,8 @@ export async function POST(req: NextRequest) {
           { role: 'assistant', content: null, tool_calls: choice.message.tool_calls },
           { role: 'tool', tool_call_id: toolCall.id, content: toolResult },
         ],
-        max_tokens: 400,
-        temperature: 0.5,
+        max_tokens: 250,
+        temperature: 0.4,
       })
 
       const reply = response2.choices[0]?.message?.content ?? toolResult
