@@ -542,27 +542,26 @@ async function injectMonthlySavings(userId: string) {
   } catch { /* silencieux */ }
 }
 
-// ── Recherche par ville sur screen-welcome ───────────────────────────────────
+// ── Recherche ville+département fusionnée ────────────────────────────────────
 function injectCitySearch() {
-  if (document.getElementById('wolf-city-btn')) return
+  if (document.getElementById('wolf-city-wrap')) return
   const deptBtn = document.getElementById('btn-dept')
-  if (!deptBtn) return
+  const dw = document.getElementById('dw')
+  const deptStatus = document.getElementById('dept-status')
+  if (!deptBtn || !dw) return
 
-  // Bouton ville
-  const btn = document.createElement('button')
-  btn.id = 'wolf-city-btn'
-  btn.type = 'button'
-  btn.className = 'loc-btn'
-  btn.innerHTML = '<span class="bi">🏙️</span><span class="bt">Rechercher une ville<span class="bs">Tapez le nom de votre ville</span></span>'
+  // Cacher le dropdown département original
+  dw.style.display = 'none'
+  if (deptStatus) deptStatus.style.display = 'none'
 
-  // Conteneur input + suggestions
+  // Conteneur input unifié (ville + dept) — s'insère après btn-dept
   const wrap = document.createElement('div')
   wrap.id = 'wolf-city-wrap'
   wrap.style.cssText = 'display:none;margin-top:8px;position:relative'
 
   const inp = document.createElement('input')
   inp.type = 'text'
-  inp.placeholder = 'Ex: Lyon, Bordeaux, Strasbourg...'
+  inp.placeholder = 'Ville (ex: Lyon) ou département (ex: Rhône, 69)...'
   inp.autocomplete = 'off'
   inp.style.cssText = `width:100%;padding:11px 14px;border-radius:10px;border:1.5px solid ${PC.border};background:rgba(168,85,247,.06);color:#f1f5f9;font-size:14px;font-family:${PC.font};outline:none;box-sizing:border-box`
 
@@ -576,6 +575,61 @@ function injectCitySearch() {
   wrap.appendChild(inp)
   wrap.appendChild(sug)
 
+  // Données départements (centre géographique)
+  const DEPTS: Record<string, { name: string; lat: number; lon: number }> = {
+    '01': { name: 'Ain', lat: 46.15, lon: 5.35 }, '02': { name: 'Aisne', lat: 49.55, lon: 3.52 },
+    '03': { name: 'Allier', lat: 46.35, lon: 3.17 }, '04': { name: 'Alpes-de-Haute-Provence', lat: 44.06, lon: 6.23 },
+    '05': { name: 'Hautes-Alpes', lat: 44.56, lon: 6.27 }, '06': { name: 'Alpes-Maritimes', lat: 43.93, lon: 7.11 },
+    '07': { name: 'Ardèche', lat: 44.74, lon: 4.49 }, '08': { name: 'Ardennes', lat: 49.69, lon: 4.70 },
+    '09': { name: 'Ariège', lat: 42.95, lon: 1.60 }, '10': { name: 'Aube', lat: 48.32, lon: 4.08 },
+    '11': { name: 'Aude', lat: 43.07, lon: 2.49 }, '12': { name: 'Aveyron', lat: 44.35, lon: 2.57 },
+    '13': { name: 'Bouches-du-Rhône', lat: 43.54, lon: 5.43 }, '14': { name: 'Calvados', lat: 49.09, lon: -0.37 },
+    '15': { name: 'Cantal', lat: 45.04, lon: 2.75 }, '16': { name: 'Charente', lat: 45.70, lon: 0.16 },
+    '17': { name: 'Charente-Maritime', lat: 45.75, lon: -0.67 }, '18': { name: 'Cher', lat: 47.08, lon: 2.40 },
+    '19': { name: 'Corrèze', lat: 45.34, lon: 1.87 }, '21': { name: 'Côte-d\'Or', lat: 47.42, lon: 4.77 },
+    '22': { name: 'Côtes-d\'Armor', lat: 48.46, lon: -2.77 }, '23': { name: 'Creuse', lat: 45.99, lon: 2.02 },
+    '24': { name: 'Dordogne', lat: 45.15, lon: 0.72 }, '25': { name: 'Doubs', lat: 47.17, lon: 6.35 },
+    '26': { name: 'Drôme', lat: 44.72, lon: 5.13 }, '27': { name: 'Eure', lat: 49.07, lon: 1.17 },
+    '28': { name: 'Eure-et-Loir', lat: 48.44, lon: 1.37 }, '29': { name: 'Finistère', lat: 48.25, lon: -4.02 },
+    '2A': { name: 'Corse-du-Sud', lat: 41.86, lon: 9.01 }, '2B': { name: 'Haute-Corse', lat: 42.40, lon: 9.21 },
+    '30': { name: 'Gard', lat: 43.95, lon: 4.24 }, '31': { name: 'Haute-Garonne', lat: 43.30, lon: 1.32 },
+    '32': { name: 'Gers', lat: 43.64, lon: 0.59 }, '33': { name: 'Gironde', lat: 44.84, lon: -0.58 },
+    '34': { name: 'Hérault', lat: 43.61, lon: 3.41 }, '35': { name: 'Ille-et-Vilaine', lat: 48.12, lon: -1.68 },
+    '36': { name: 'Indre', lat: 46.81, lon: 1.69 }, '37': { name: 'Indre-et-Loire', lat: 47.25, lon: 0.68 },
+    '38': { name: 'Isère', lat: 45.27, lon: 5.72 }, '39': { name: 'Jura', lat: 46.68, lon: 5.57 },
+    '40': { name: 'Landes', lat: 43.94, lon: -0.74 }, '41': { name: 'Loir-et-Cher', lat: 47.58, lon: 1.34 },
+    '42': { name: 'Loire', lat: 45.74, lon: 4.08 }, '43': { name: 'Haute-Loire', lat: 45.06, lon: 3.88 },
+    '44': { name: 'Loire-Atlantique', lat: 47.26, lon: -1.56 }, '45': { name: 'Loiret', lat: 47.91, lon: 2.09 },
+    '46': { name: 'Lot', lat: 44.62, lon: 1.67 }, '47': { name: 'Lot-et-Garonne', lat: 44.36, lon: 0.46 },
+    '48': { name: 'Lozère', lat: 44.52, lon: 3.50 }, '49': { name: 'Maine-et-Loire', lat: 47.39, lon: -0.55 },
+    '50': { name: 'Manche', lat: 49.12, lon: -1.33 }, '51': { name: 'Marne', lat: 48.96, lon: 4.36 },
+    '52': { name: 'Haute-Marne', lat: 48.11, lon: 5.14 }, '53': { name: 'Mayenne', lat: 48.30, lon: -0.62 },
+    '54': { name: 'Meurthe-et-Moselle', lat: 48.69, lon: 6.18 }, '55': { name: 'Meuse', lat: 48.99, lon: 5.38 },
+    '56': { name: 'Morbihan', lat: 47.87, lon: -2.84 }, '57': { name: 'Moselle', lat: 49.03, lon: 6.58 },
+    '58': { name: 'Nièvre', lat: 47.11, lon: 3.50 }, '59': { name: 'Nord', lat: 50.52, lon: 3.08 },
+    '60': { name: 'Oise', lat: 49.41, lon: 2.43 }, '61': { name: 'Orne', lat: 48.57, lon: 0.09 },
+    '62': { name: 'Pas-de-Calais', lat: 50.52, lon: 2.31 }, '63': { name: 'Puy-de-Dôme', lat: 45.77, lon: 3.08 },
+    '64': { name: 'Pyrénées-Atlantiques', lat: 43.29, lon: -0.36 }, '65': { name: 'Hautes-Pyrénées', lat: 43.11, lon: 0.16 },
+    '66': { name: 'Pyrénées-Orientales', lat: 42.60, lon: 2.70 }, '67': { name: 'Bas-Rhin', lat: 48.54, lon: 7.52 },
+    '68': { name: 'Haut-Rhin', lat: 47.84, lon: 7.33 }, '69': { name: 'Rhône', lat: 45.74, lon: 4.82 },
+    '70': { name: 'Haute-Saône', lat: 47.62, lon: 6.15 }, '71': { name: 'Saône-et-Loire', lat: 46.65, lon: 4.56 },
+    '72': { name: 'Sarthe', lat: 47.98, lon: 0.15 }, '73': { name: 'Savoie', lat: 45.50, lon: 6.40 },
+    '74': { name: 'Haute-Savoie', lat: 46.04, lon: 6.39 }, '75': { name: 'Paris', lat: 48.86, lon: 2.35 },
+    '76': { name: 'Seine-Maritime', lat: 49.67, lon: 1.07 }, '77': { name: 'Seine-et-Marne', lat: 48.62, lon: 2.97 },
+    '78': { name: 'Yvelines', lat: 48.80, lon: 1.83 }, '79': { name: 'Deux-Sèvres', lat: 46.55, lon: -0.34 },
+    '80': { name: 'Somme', lat: 49.92, lon: 2.30 }, '81': { name: 'Tarn', lat: 43.79, lon: 2.05 },
+    '82': { name: 'Tarn-et-Garonne', lat: 44.02, lon: 1.36 }, '83': { name: 'Var', lat: 43.46, lon: 6.23 },
+    '84': { name: 'Vaucluse', lat: 44.05, lon: 5.05 }, '85': { name: 'Vendée', lat: 46.67, lon: -1.43 },
+    '86': { name: 'Vienne', lat: 46.58, lon: 0.34 }, '87': { name: 'Haute-Vienne', lat: 45.83, lon: 1.26 },
+    '88': { name: 'Vosges', lat: 48.17, lon: 6.43 }, '89': { name: 'Yonne', lat: 47.80, lon: 3.57 },
+    '90': { name: 'Territoire de Belfort', lat: 47.64, lon: 6.85 }, '91': { name: 'Essonne', lat: 48.52, lon: 2.16 },
+    '92': { name: 'Hauts-de-Seine', lat: 48.83, lon: 2.22 }, '93': { name: 'Seine-Saint-Denis', lat: 48.91, lon: 2.48 },
+    '94': { name: 'Val-de-Marne', lat: 48.77, lon: 2.47 }, '95': { name: 'Val-d\'Oise', lat: 49.07, lon: 2.12 },
+    '971': { name: 'Guadeloupe', lat: 16.25, lon: -61.55 }, '972': { name: 'Martinique', lat: 14.64, lon: -61.02 },
+    '973': { name: 'Guyane', lat: 4.00, lon: -53.00 }, '974': { name: 'La Réunion', lat: -21.11, lon: 55.53 },
+    '976': { name: 'Mayotte', lat: -12.83, lon: 45.17 },
+  }
+
   let debounce: ReturnType<typeof setTimeout> | null = null
 
   inp.addEventListener('input', () => {
@@ -584,22 +638,38 @@ function injectCitySearch() {
     if (v.length < 2) { sug.style.display = 'none'; return }
     debounce = setTimeout(async () => {
       try {
-        const r = await fetch(`https://api-adresse.data.gouv.fr/search/?q=${encodeURIComponent(v)}&type=municipality&limit=6`)
+        // Chercher dans les départements (par nom ou numéro)
+        const vLow = v.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+        const deptMatches = Object.entries(DEPTS)
+          .filter(([num, d]) => {
+            const nameLow = d.name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+            return nameLow.includes(vLow) || num.startsWith(v)
+          })
+          .slice(0, 3)
+          .map(([num, d]) => ({ label: `Département ${num} — ${d.name}`, context: `Département · ${num}`, lat: d.lat, lon: d.lon, isDept: true }))
+
+        // Chercher les villes via API
+        const r = await fetch(`https://api-adresse.data.gouv.fr/search/?q=${encodeURIComponent(v)}&type=municipality&limit=5`)
         const d = await r.json()
-        const results: { label: string; context: string; lat: number; lon: number }[] = (d.features ?? []).map((f: { properties: { label: string; context?: string }; geometry: { coordinates: number[] } }) => ({
+        const cityResults = (d.features ?? []).map((f: { properties: { label: string; context?: string }; geometry: { coordinates: number[] } }) => ({
           label: f.properties.label,
           context: f.properties.context?.split(',').slice(0, 2).join(' ·').trim() ?? '',
           lat: f.geometry.coordinates[1],
           lon: f.geometry.coordinates[0],
+          isDept: false,
         }))
+
+        const results = [...deptMatches, ...cityResults]
         if (!results.length) { sug.style.display = 'none'; return }
+
         sug.innerHTML = results.map((r, i) =>
           `<div data-i="${i}" style="padding:10px 16px;cursor:pointer;border-bottom:1px solid rgba(168,85,247,.1);font-family:${PC.font}">
-            <div style="font-size:14px;color:#e2e8f0">📍 ${r.label}</div>
+            <div style="font-size:14px;color:#e2e8f0">${r.isDept ? '🗺️' : '📍'} ${r.label}</div>
             ${r.context ? `<div style="font-size:11px;color:#64748b;margin-top:2px">${r.context}</div>` : ''}
           </div>`
         ).join('')
         sug.style.display = 'block'
+
         sug.querySelectorAll('[data-i]').forEach(el => {
           (el as HTMLElement).addEventListener('mouseenter', () => { (el as HTMLElement).style.background = 'rgba(168,85,247,.12)' })
           ;(el as HTMLElement).addEventListener('mouseleave', () => { (el as HTMLElement).style.background = '' })
@@ -610,14 +680,9 @@ function injectCitySearch() {
             sug.style.display = 'none'
             status.textContent = '✅ ' + pick.label
             status.className = 'loc-status show'
-            // Désélectionner les autres boutons
             document.getElementById('btn-geo')?.classList.remove('selected')
-            document.getElementById('btn-dept')?.classList.remove('selected')
-            btn.classList.add('selected')
-            document.getElementById('dw')?.classList.remove('show')
-            document.getElementById('dept-status')?.classList.remove('show')
             document.getElementById('geo-status')?.classList.remove('show')
-            // Passer la localisation au script principal
+            deptBtn.classList.add('selected')
             const fn = (window as unknown as Record<string, (lat: number, lon: number, name: string) => void>).wolfSetLocation
             if (fn) fn(pick.lat, pick.lon, pick.label)
           })
@@ -626,31 +691,28 @@ function injectCitySearch() {
     }, 280)
   })
 
-  // Fermer suggestions au clic ailleurs
   document.addEventListener('click', (e) => {
-    if (!wrap.contains(e.target as Node)) sug.style.display = 'none'
+    if (!wrap.contains(e.target as Node) && e.target !== deptBtn) sug.style.display = 'none'
   })
 
-  btn.addEventListener('click', () => {
+  // Brancher le bouton btn-dept existant
+  deptBtn.addEventListener('click', () => {
     const open = wrap.style.display === 'block'
-    // Fermer le dropdown département
-    document.getElementById('dw')?.classList.remove('show')
-    document.getElementById('btn-dept')?.classList.remove('selected')
     document.getElementById('btn-geo')?.classList.remove('selected')
+    document.getElementById('geo-status')?.classList.remove('show')
     if (open) {
       wrap.style.display = 'none'
-      btn.classList.remove('selected')
+      sug.style.display = 'none'
+      deptBtn.classList.remove('selected')
     } else {
       wrap.style.display = 'block'
-      btn.classList.add('selected')
-      inp.focus()
+      deptBtn.classList.add('selected')
+      setTimeout(() => inp.focus(), 50)
     }
   })
 
-  // Insérer après btn-dept
   deptBtn.insertAdjacentElement('afterend', status)
   deptBtn.insertAdjacentElement('afterend', wrap)
-  deptBtn.insertAdjacentElement('afterend', btn)
 }
 
 // ── Bouton télécharger l'app Android ────────────────────────────────────────
