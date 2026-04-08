@@ -377,7 +377,11 @@ function RechercheContent() {
         list = (data.elements ?? []).map(fromOverpass)
       }
 
-      const sorted = list.filter(s => s.lat && s.lon).sort((a, b) => a.dist - b.dist)
+      const sorted = list
+        .filter(s => s.lat && s.lon)
+        // Exclure les bornes sans info utile (nom générique + aucun connecteur identifié)
+        .filter(s => !(s.name === 'Borne de recharge' && s.prises.length === 1 && s.prises[0].label === 'Borne'))
+        .sort((a, b) => a.dist - b.dist)
       setEvStations(sorted)
       setStatus('ok')
 

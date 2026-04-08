@@ -545,7 +545,7 @@ async function loadEVResults(){
         const addr=t["addr:full"]||streetNum||t["loc_name"]||"";
         const city=t["addr:city"]||t["addr:municipality"]||t["addr:town"]||t["addr:village"]||"";
         return{nom,addr,city,lat:sLat,lon:sLon,dist,prises,nbrePDC,puissance,puissanceEstimee,speedCat,gratuit,is24h,operateur};
-      }).filter(s=>s.dist<=20&&s.lat!==0);
+      }).filter(s=>s.dist<=20&&s.lat!==0&&!(s.nom==="Borne de recharge"&&s.prises.length===1&&s.prises[0].label==="Borne"));
 
       evStations.sort((a,b)=>a.dist-b.dist);
       if(myToken!==evFetchToken)return; // résultat obsolète
@@ -849,7 +849,7 @@ async function fetchFullEV(){
       const addr=t["addr:full"]||streetNum||"";
       const city=t["addr:city"]||t["addr:municipality"]||t["addr:town"]||"";
       return{nom,addr,city,lat:sLat,lon:sLon,dist,prises,nbrePDC,puissance,puissanceEstimee:!t["socket:type2:output"]&&!t.maxpower&&puissance!=null,speedCat,gratuit,is24h,operateur};
-    }).filter(s=>s.lat!==0).sort((a,b)=>a.dist-b.dist);
+    }).filter(s=>s.lat!==0&&!(s.nom==="Borne de recharge"&&s.prises.length===1&&s.prises[0].label==="Borne")).sort((a,b)=>a.dist-b.dist);
 
     document.getElementById("ff-cnt").textContent=list.length+" borne"+(list.length>1?"s":"");
     if(!list.length){document.getElementById("f-empty").classList.add("show");document.getElementById("f-loading").classList.remove("show");return;}

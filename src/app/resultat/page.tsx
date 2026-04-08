@@ -240,7 +240,10 @@ function ResultatContent() {
         })
       }
 
-      const sorted = list.filter(s => s.lat && s.lon).sort((a, b) => a.dist - b.dist)
+      const sorted = list
+        .filter(s => s.lat && s.lon)
+        .filter(s => !(s.name === 'Borne de recharge' && s.prises.length === 1 && s.prises[0].label === 'Borne'))
+        .sort((a, b) => a.dist - b.dist)
       if (!sorted.length) { setStatus('empty'); return }
       setEvStations(sorted); setStatus('ok')
     } catch (e) {
