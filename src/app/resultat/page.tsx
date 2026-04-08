@@ -131,6 +131,8 @@ function ResultatContent() {
   const [reportPrice, setReportPrice] = useState('')
   const [reportMsg,   setReportMsg]   = useState('')
   const [currentUserId, setCurrentUserId] = useState('')
+  const [isPro,       setIsPro]       = useState(false)
+  const [favorites,   setFavorites]   = useState<Set<string>>(new Set())
 
   // ── Fetch carburant ───────────────────────────────────────────────────────
   const loadFuel = useCallback(async () => {
@@ -251,10 +253,18 @@ function ResultatContent() {
     if (!lat || !lon) { router.push('/'); return }
     if (isEV) loadEV()
     else loadFuel()
-    // Récupérer l'userId pour les signalements
+    // Récupérer l'userId, statut Pro et favoris
     import('@/lib/supabase').then(({ supabase }) => {
-      supabase.auth.getUser().then(({ data }) => {
-        if (data.user) setCurrentUserId(data.user.id)
+      supabase.auth.getSession().then(async ({ data }) => {
+        const user = data.session?.user
+        if (!user) return
+        setCurrentUserId(user.id)
+        const cached = localStorage.getItem(`wolf_pro_${user.id}`) === '1'
+        if (cached) setIsPro(true)
+        const { data: profile } = await supabase.from('profiles').select('is_pro').eq('id', user.id).single()
+        if (profile?.is_pro) { setIsPro(true); localStorage.setItem(`wolf_pro_${user.id}`, '1') }
+        const saved: string[] = JSON.parse(localStorage.getItem('wolf_favorites') ?? '[]')
+        setFavorites(new Set(saved))
       })
     })
   }, [lat, lon, isEV, loadFuel, loadEV, router])
@@ -277,6 +287,26 @@ function ResultatContent() {
     if (data.error) { setReportMsg('⚠️ ' + data.error) }
     else { setReportMsg('✅ Signalement envoyé, merci !') }
     setTimeout(() => { setReportingId(null); setReportMsg(''); setReportPrice('') }, 2500)
+  }
+
+  function stationKey(addr: string, city: string, cp: string) {
+    return btoa(unescape(encodeURIComponent((city + addr + cp).slice(0, 60)))).slice(0, 40)
+  }
+
+  async function toggleFavorite(s: Station) {
+    if (!currentUserId || !isPro) return
+    const sid = stationKey(s.addr, s.city, s.cp)
+    const isSaved = favorites.has(sid)
+    const next = new Set(favorites)
+    if (isSaved) {
+      await fetch('/api/favorites', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: currentUserId, stationId: sid }) }).catch(() => {})
+      next.delete(sid)
+    } else {
+      await fetch('/api/favorites', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: currentUserId, stationId: sid, stationName: s.city, stationAddress: [s.addr, s.cp, s.city].filter(Boolean).join(', '), lastPrice: s.price }) }).catch(() => {})
+      next.add(sid)
+    }
+    setFavorites(next)
+    localStorage.setItem('wolf_favorites', JSON.stringify([...next]))
   }
 
   // ── GPS précis ────────────────────────────────────────────────────────────
@@ -483,6 +513,16 @@ function ResultatContent() {
                           ⚠️ Signaler
                         </button>
                       )}
+                      {isPro && currentUserId && (() => {
+                        const sid = stationKey(s.addr, s.city, s.cp)
+                        const isSaved = favorites.has(sid)
+                        return (
+                          <button onClick={() => toggleFavorite(s)}
+                            style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid rgba(168,85,247,.3)', background: 'rgba(168,85,247,.06)', color: '#c084fc', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'DM Sans,sans-serif' }}>
+                            {isSaved ? '❤️ Favori' : '🤍 Favori'}
+                          </button>
+                        )
+                      })()}
                     </div>
                     {reportingId === s.id && (
                       <div style={{ marginTop: 10, padding: '12px', borderRadius: 10, background: 'rgba(245,158,11,.06)', border: '1px solid rgba(245,158,11,.2)' }}>
