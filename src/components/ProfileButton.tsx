@@ -109,32 +109,50 @@ export default function ProfileButton() {
       )}
 
       {/* Bouton profil */}
-      <div style={{ position: 'fixed', top: '16px', right: '16px', zIndex: 99999 }}>
+      <div style={{ position: 'fixed', top: '14px', right: '14px', zIndex: 99999 }}>
         <button
           onClick={() => router.push('/profil')}
           title="Mon profil"
           style={{
-            width: '40px',
-            height: '40px',
-            borderRadius: '50%',
-            border: isPro ? '2px solid #a855f7' : '2px solid rgba(139,92,246,.3)',
+            height: '42px',
+            minWidth: '42px',
+            paddingLeft: '12px',
+            paddingRight: '14px',
+            borderRadius: '21px',
+            border: isPro ? '2px solid #a855f7' : '2px solid rgba(168,85,247,.5)',
             background: isPro
-              ? 'linear-gradient(135deg,rgba(168,85,247,.3),rgba(124,58,237,.2))'
-              : 'rgba(15,10,40,.9)',
-            color: isPro ? '#c084fc' : '#94a3b8',
-            fontSize: '15px',
+              ? 'linear-gradient(135deg,#a855f7,#7c3aed)'
+              : 'rgba(15,10,40,.95)',
+            color: '#fff',
+            fontSize: '13px',
             fontWeight: 800,
             cursor: 'pointer',
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'center',
+            gap: '7px',
             fontFamily: "'DM Sans',sans-serif",
-            boxShadow: isPro ? '0 0 12px rgba(168,85,247,.4)' : '0 2px 8px rgba(0,0,0,.4)',
+            boxShadow: isPro
+              ? '0 0 16px rgba(168,85,247,.6), 0 2px 12px rgba(0,0,0,.5)'
+              : '0 2px 12px rgba(0,0,0,.6)',
             transition: 'all .2s',
             position: 'relative',
+            backdropFilter: 'blur(8px)',
+            whiteSpace: 'nowrap',
           }}
         >
-          {isPro ? '⭐' : initial}
+          {/* Avatar cercle */}
+          <div style={{
+            width: '26px', height: '26px', borderRadius: '50%', flexShrink: 0,
+            background: isPro ? 'rgba(255,255,255,.2)' : 'rgba(168,85,247,.3)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: '13px', fontWeight: 800,
+            border: '1.5px solid rgba(255,255,255,.25)',
+          }}>
+            {isPro ? '⭐' : initial}
+          </div>
+          <span style={{ fontSize: '13px', fontWeight: 700, color: isPro ? '#fff' : '#e2e8f0' }}>
+            Profil
+          </span>
         </button>
 
         {/* Badge demandes */}
